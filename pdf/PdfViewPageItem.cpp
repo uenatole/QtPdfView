@@ -27,6 +27,17 @@ void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
     painter->fillRect(boundingRect(), Qt::white);
 
+    // TODO: Draw blurry image based on outdated render from cache.
+    //       ~
+    //       It makes sense to do this only for those renders whose background task is significantly longer
+    //       than the time it takes to draw a blurry image based of outdated render from the cache.
+    //       ~
+    //       Since only the PdfViewPageProvider can answer the question of whether such an operation is appropriate,
+    //       this action must occur in complete coordination with the asynchronous render request.
+    //       -
+    // NOTE: This enhancement may be done only after asynchronous render is ready.
+    //       Without this it won't make any sense.
+
     QFuture<PdfViewPageProvider::ResponseAsync> response = _provider->getRenderAsync(_number, scale);
     response.then([=, this](const PdfViewPageProvider::ResponseAsync& v){
         if (const QImage* image = std::get_if<QImage>(&v); image) {
