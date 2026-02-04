@@ -18,7 +18,4 @@ private:
 
     const int _number;
     const QSizeF _pointSize;
-
-    qreal _scaleCache;
-    QImage _imageCache;
 };
