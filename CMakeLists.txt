@@ -10,6 +10,8 @@ add_executable(MyPdfView
         pdf/PdfView.h
         pdf/PdfViewPageItem.cpp
         pdf/PdfViewPageItem.h
+        pdf/PdfViewPageProvider.cpp
+        pdf/PdfViewPageProvider.h
         main.cpp)
 
 target_link_libraries(MyPdfView PRIVATE Qt::Pdf Qt::Widgets)

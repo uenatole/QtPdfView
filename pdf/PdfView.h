@@ -3,6 +3,7 @@
 #include <QGraphicsView>
 #include <QWidget>
 
+class PdfViewPageProvider;
 class QPdfDocument;
 
 class PdfView : QGraphicsView
@@ -26,4 +27,5 @@ protected:
 
 private:
     bool m_wheelZoomingDisabled = true;
+    std::unique_ptr<PdfViewPageProvider> m_provider;
 };

@@ -6,15 +6,19 @@
 #include <QWheelEvent>
 
 #include "PdfViewPageItem.h"
+#include "PdfViewPageProvider.h"
 
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
+    , m_provider(new PdfViewPageProvider())
 {}
 
 PdfView::~PdfView(){}
 
 void PdfView::setDocument(QPdfDocument* document)
 {
+    m_provider->setDocument(document);
+
     auto* scene = new QGraphicsScene();
     scene->setBackgroundBrush(palette().brush(QPalette::Dark));
 
@@ -27,7 +31,7 @@ void PdfView::setDocument(QPdfDocument* document)
     {
         QSizeF pagePointSize = document->pagePointSize(page);
 
-        const auto item = new PdfViewPageItem(page, document);
+        const auto item = new PdfViewPageItem(page, m_provider.get());
         item->setPos(documentMargins, yCursor);
 
         yCursor += pagePointSize.height() + documentMargins;

@@ -3,13 +3,15 @@
 #include <QPainter>
 #include <QPdfDocument>
 
-PdfViewPageItem::PdfViewPageItem(const int number, QPdfDocument* document)
-    : _number(number)
-    , _document(document)
-    , _pointSize(_document->pagePointSize(number))
+#include "PdfViewPageProvider.h"
+
+PdfViewPageItem::PdfViewPageItem(const int number, PdfViewPageProvider* provider)
+    : _provider(provider)
+    , _number(number)
+    , _pointSize(_provider->document()->pagePointSize(number))
     , _scaleCache(0.0)
 {
-    assert(number >= 0 && number < _document->pageCount());
+    assert(number >= 0 && number < _provider->document()->pageCount());
 }
 
 QRectF PdfViewPageItem::boundingRect() const
@@ -31,11 +33,13 @@ void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     }
     else
     {
-        const QSizeF size = _pointSize * scale;
-        const QImage image = _document->render(_number, size.toSize());
-        painter->drawImage(boundingRect(), image);
-
-        _scaleCache = scale;
-        _imageCache = image;
+        QFuture<PdfViewPageProvider::Response> response = _provider->enqueueRequest({ _number, scale });
+        response.then([=, this](const PdfViewPageProvider::Response& value){
+            if (const QImage* image = std::get_if<QImage>(&value)){
+                _imageCache = *image;
+                _scaleCache = scale;
+                paint(painter, option, widget);
+            }
+        });
     }
 }
