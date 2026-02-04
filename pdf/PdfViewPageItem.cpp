@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QPdfDocument>
+#include <QWidget>
 
 #include "PdfViewPageProvider.h"
 
@@ -21,13 +22,12 @@ QRectF PdfViewPageItem::boundingRect() const
 void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     Q_UNUSED(option);
-    Q_UNUSED(widget);
 
     const qreal scale = painter->worldTransform().m11();
 
     painter->fillRect(boundingRect(), Qt::white);
 
-    const PdfViewPageProvider::Request request { _number, scale };
+    const PdfViewPageProvider::Request request { _number, scale, widget->devicePixelRatioF() };
     QFuture<PdfViewPageProvider::Response> response = _provider->enqueueRequest(request);
 
     response.then([=, this](const PdfViewPageProvider::Response& v){

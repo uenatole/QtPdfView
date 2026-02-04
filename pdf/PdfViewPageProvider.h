@@ -12,6 +12,7 @@ public:
     struct Request {
         int PageNumber;
         qreal PageScaling;
+        qreal OutputPixelRatio;
     };
 
     enum class Status { BadOptions, Cancelled };

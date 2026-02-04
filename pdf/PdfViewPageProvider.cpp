@@ -33,7 +33,7 @@ QFuture<PdfViewPageProvider::Response> PdfViewPageProvider::enqueueRequest(const
     }
 
     const auto pointSize = _document->pagePointSize(request.PageNumber);
-    const auto renderSize = pointSize * request.PageScaling;
+    const auto renderSize = pointSize * request.PageScaling * request.OutputPixelRatio;
     const auto image = _document->render(request.PageNumber, renderSize.toSize());
 
     _cache.insert(key, new QImage(image), image.sizeInBytes());
