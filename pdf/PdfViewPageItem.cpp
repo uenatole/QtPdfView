@@ -27,10 +27,8 @@ void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
     painter->fillRect(boundingRect(), Qt::white);
 
-    const PdfViewPageProvider::Request request { _number, scale, widget->devicePixelRatioF() };
-    QFuture<PdfViewPageProvider::Response> response = _provider->enqueueRequest(request);
-
-    response.then([=, this](const PdfViewPageProvider::Response& v){
+    QFuture<PdfViewPageProvider::ResponseAsync> response = _provider->getRenderAsync(_number, scale);
+    response.then([=, this](const PdfViewPageProvider::ResponseAsync& v){
         if (const QImage* image = std::get_if<QImage>(&v); image) {
             painter->drawImage(boundingRect(), *image);
         }

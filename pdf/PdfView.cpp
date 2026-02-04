@@ -11,7 +11,10 @@
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
     , m_provider(new PdfViewPageProvider())
-{}
+{
+    // TODO: keep track QWindow::screenChanged
+    m_provider->setPixelRatio(devicePixelRatio());
+}
 
 PdfView::~PdfView(){}
 

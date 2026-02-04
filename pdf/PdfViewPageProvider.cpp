@@ -17,25 +17,31 @@ QPdfDocument* PdfViewPageProvider::document() const
     return _document;
 }
 
+void PdfViewPageProvider::setPixelRatio(const qreal ratio)
+{
+    // TODO: invalidate cache (?) or take ratio in account with {scale} (!)
+    _pixelRatio = ratio;
+}
+
 void PdfViewPageProvider::setCacheLimit(const qreal bytes) const
 {
     _cache.setMaxCost(bytes);
 }
 
-QFuture<PdfViewPageProvider::Response> PdfViewPageProvider::enqueueRequest(const Request& request) const
+QFuture<PdfViewPageProvider::ResponseAsync> PdfViewPageProvider::getRenderAsync(int page, qreal scale) const
 {
-    const CacheKey key { request.PageNumber, request.PageScaling };
+    const CacheKey key { page, scale };
 
     if (const QImage* image = _cache.object(key); image)
     {
         qDebug() << "Cache hit: page =" << key.first << "scale =" << key.second;
-        return QtFuture::makeReadyValueFuture<Response>(*image);
+        return QtFuture::makeReadyValueFuture<ResponseAsync>(*image);
     }
 
-    const auto pointSize = _document->pagePointSize(request.PageNumber);
-    const auto renderSize = pointSize * request.PageScaling * request.OutputPixelRatio;
-    const auto image = _document->render(request.PageNumber, renderSize.toSize());
+    const auto pointSize = _document->pagePointSize(page);
+    const auto renderSize = pointSize * scale * _pixelRatio;
+    const auto image = _document->render(page, renderSize.toSize());
 
     _cache.insert(key, new QImage(image), image.sizeInBytes());
-    return QtFuture::makeReadyValueFuture<Response>(image);
+    return QtFuture::makeReadyValueFuture<ResponseAsync>(image);
 }
