@@ -1,0 +1,3 @@
+[submodule "3rdparty/qtwebengine"]
+	path = 3rdparty/qtwebengine
+	url = https://github.com/uenatole/qtwebengine.git

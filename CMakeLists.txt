@@ -3,7 +3,13 @@ project(MyPdfView)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Qt6 COMPONENTS REQUIRED Pdf Widgets)
+set(FEATURE_qtwebengine_build OFF CACHE BOOL "" FORCE)
+set(QT_GENERATE_SBOM OFF CACHE BOOL "" FORCE)
+set(QT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(QT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(3rdparty/qtwebengine)
+
+find_package(Qt6 COMPONENTS Widgets)
 
 add_executable(MyPdfView
         pdf/PdfView.cpp
