@@ -17,7 +17,7 @@ public:
     void setPixelRatio(qreal ratio);
     void setCacheLimit(qreal bytes) const;
 
-    struct RenderResponse
+    struct RenderResponses
     {
         struct Cached
         {
@@ -29,9 +29,12 @@ public:
             std::optional<QImage> NearestImage;
             QFuture<void> Signal;
         };
+
+        struct InProgress {};
     };
 
-    std::variant<RenderResponse::Cached, RenderResponse::Scheduled> requestRender(int page, qreal scale);
+    using RenderResponse = std::variant<RenderResponses::Cached, RenderResponses::Scheduled, RenderResponses::InProgress>;
+    RenderResponse requestRender(int page, qreal scale);
 
 private:
     QPdfDocument* _document = nullptr;
@@ -40,5 +43,17 @@ private:
     using CacheKey = std::pair<int, qreal>;
     mutable QCache<CacheKey, QImage> _cache;
 
+    struct RenderRequest
+    {
+        int Page;
+        qreal Scale;
+
+        bool operator==(const RenderRequest& other) const
+        {
+            return Page == other.Page && qFuzzyCompare(Scale, other.Scale);
+        }
+    };
+
+    mutable std::optional<RenderRequest> _activeRenderRequestOpt;
     mutable QFuture<QImage> _activeRenderRequestJob;
 };

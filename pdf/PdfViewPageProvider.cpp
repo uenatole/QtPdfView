@@ -1,6 +1,8 @@
 #include "PdfViewPageProvider.h"
 
+#include <QElapsedTimer>
 #include <QPdfDocument>
+#include <QScreen>
 #include <QtConcurrent/QtConcurrentRun>
 
 PdfViewPageProvider::PdfViewPageProvider()
@@ -29,23 +31,31 @@ void PdfViewPageProvider::setCacheLimit(const qreal bytes) const
     _cache.setMaxCost(bytes);
 }
 
-std::variant<PdfViewPageProvider::RenderResponse::Cached, PdfViewPageProvider::RenderResponse::Scheduled> PdfViewPageProvider::requestRender(int page, qreal scale)
+PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page, qreal scale)
 {
     const CacheKey key { page, scale };
+    const RenderRequest request { page, scale };
 
     if (const QImage* image = _cache.object(key); image)
     {
         qDebug() << "Cache hit: page =" << key.first << "scale =" << key.second;
-        return RenderResponse::Cached { *image };
+        return RenderResponses::Cached { *image };
     }
 
     // TODO: Do not drop the active job completely but cancel and move it to the second place in the queue.
     //       Item with cancelled render job will try to ::update() itself, and if item is visible,
     //       the request must be marked as "actual" to not be dropped completely.
 
+    // Sometimes request may be sequentially duplicated, ignore it
+    if (_activeRenderRequestOpt && request == *_activeRenderRequestOpt)
+    {
+        return RenderResponses::InProgress();
+    }
+
     _activeRenderRequestJob.cancel();
 
     // Rendering is done in separate thread
+    _activeRenderRequestOpt = request;
     _activeRenderRequestJob = QtConcurrent::run([document=_document, ratio=_pixelRatio, page, scale](QPromise<QImage>& promise)
     {
         struct PromiseCancel : QPdfDocument::ICancel {
@@ -64,14 +74,21 @@ std::variant<PdfViewPageProvider::RenderResponse::Cached, PdfViewPageProvider::R
         const auto size = renderSize.toSize();
 
         const auto cancel = std::make_unique<PromiseCancel>(promise);
+
+        QElapsedTimer timer;
+        timer.start();
         const QImage result = document->render2(page, size, cancel.get());
+        qDebug() << "Render finished: page =" << page << "scale =" << scale << " time =" << timer.elapsed() << "ms";
+
         promise.addResult(result);
     });
 
     // Caching is done in main thread
     const auto chain = _activeRenderRequestJob.then(QThread::currentThread(), [this, key](const QImage& image){
-        _cache.insert(key, new QImage(image), image.sizeInBytes());
+        _activeRenderRequestOpt = std::nullopt;
+        const bool inserted = _cache.insert(key, new QImage(image), image.sizeInBytes());
+        qDebug() << "Cache load: page =" << key.first << "scale=" << key.second << "inserted =" << inserted;
     });
 
-    return RenderResponse::Scheduled { std::nullopt, chain };
+    return RenderResponses::Scheduled { std::nullopt, chain };
 }

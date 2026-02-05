@@ -42,16 +42,27 @@ void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     auto response = _provider->requestRender(_number, scale);
 
     std::visit(overloads {
-        [&](const PdfViewPageProvider::RenderResponse::Cached& cached)
+        [&](const PdfViewPageProvider::RenderResponses::Cached& cached)
         {
             painter->drawImage(boundingRect(), cached.Image);
         },
-        [&](PdfViewPageProvider::RenderResponse::Scheduled& scheduled)
+        [&](PdfViewPageProvider::RenderResponses::Scheduled& scheduled)
         {
             if (scheduled.NearestImage)
                 painter->drawImage(boundingRect(), scheduled.NearestImage.value());
 
-            scheduled.Signal.then([this]{ update(); });
+            scheduled.Signal
+                .then([this] {
+                    qDebug() << "Page" << _number << "render is ready, schedule repaint";
+                    update();
+                })
+                // due to the lack of 'reason' hint we can't skip ::update() for the cases
+                // where job has been replaced with another job for the same page (requester).
+                .onCanceled([this] {
+                    qDebug() << "Page" << _number << "render has been cancelled, schedule repaint (render)";
+                    update();
+                });
         },
+        [&](PdfViewPageProvider::RenderResponses::InProgress){}
     }, response);
 }
