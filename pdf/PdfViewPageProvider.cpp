@@ -1,6 +1,7 @@
 #include "PdfViewPageProvider.h"
 
 #include <QElapsedTimer>
+#include <QGraphicsItem>
 #include <QPdfDocument>
 #include <QScreen>
 #include <QtConcurrent/QtConcurrentRun>
@@ -13,6 +14,11 @@ PdfViewPageProvider::PdfViewPageProvider()
 void PdfViewPageProvider::setDocument(QPdfDocument* document)
 {
     _document = document;
+}
+
+void PdfViewPageProvider::setView(QGraphicsView* view)
+{
+    _view = view;
 }
 
 QPdfDocument* PdfViewPageProvider::document() const
@@ -31,7 +37,7 @@ void PdfViewPageProvider::setCacheLimit(const qreal bytes) const
     _cache.setLimit(bytes);
 }
 
-PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page, qreal scale)
+PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(const QGraphicsItem* requester, int page, qreal scale)
 {
     if (const QImage* image = _cache.object(page, scale); image)
     {
@@ -39,7 +45,7 @@ PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page,
         return RenderResponse { *image };
     }
 
-    const RenderParameters parameters { page, scale };
+    const RenderParameters parameters { page, scale, requester };
     const std::optional<QImage> nearestImage = findNearestImage(page, scale);
 
     // Check active render request for duplication
@@ -131,6 +137,15 @@ void PdfViewPageProvider::RenderCache::setLimit(std::size_t bytes)
     _storage.setMaxCost(bytes);
 }
 
+bool PdfViewPageProvider::isRequesterActual(const QGraphicsItem* item) const
+{
+    QRect portRect = _view->viewport()->rect();
+    QRectF sceneRect = _view->mapToScene(portRect).boundingRect();
+    QRectF itemRect = item->mapRectFromScene(sceneRect);
+
+    return itemRect.intersects(item->boundingRect());
+}
+
 std::optional<QImage> PdfViewPageProvider::findNearestImage(int page, qreal scale)
 {
     if (auto* image = _cache.nearestObject(page, scale); image)
@@ -156,10 +171,19 @@ QFuture<void> PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)
 void PdfViewPageProvider::tryDequeueRenderRequest()
 {
     // TODO: stop active render if it's not actual now
-    // TODO: skip all unactual requests
-    // NOTE: actuality is checked based on requester visibility. TODO: add way to check if requester is visible
 
-    if (_renderState) return;
+    // Erase unactual requests
+    const auto firstActualIt = std::find_if(_requests.begin(), _requests.end(), [this](const RenderRequest& request)
+    {
+        const auto* requester = request.Parameters.Requester;
+        return isRequesterActual(requester);
+    });
+
+    const auto prevSize = _requests.size();
+    _requests.erase(_requests.begin(), firstActualIt);
+
+    if (const auto diff = prevSize - _requests.size(); diff) qDebug() << "Erased" << diff << "elements";
+
     if (_requests.empty()) return;
 
     // Take first request in queue

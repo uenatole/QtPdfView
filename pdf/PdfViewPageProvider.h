@@ -2,6 +2,8 @@
 
 #include <QImage>
 #include <QFuture>
+#include <QGraphicsView>
+
 #include "../custom/QCacheExt.h"
 
 class QPdfDocument;
@@ -12,6 +14,8 @@ public:
     PdfViewPageProvider();
 
     void setDocument(QPdfDocument* document);
+    void setView(QGraphicsView* view);
+
     QPdfDocument* document() const;
 
     void setPixelRatio(qreal ratio);
@@ -23,7 +27,7 @@ public:
         std::optional<QFuture<void>> RenderTicket;
     };
 
-    RenderResponse requestRender(int page, qreal scale);
+    RenderResponse requestRender(const QGraphicsItem* requester, int page, qreal scale);
 
 private:
     class RenderCache
@@ -47,6 +51,7 @@ private:
     {
         int Page;
         qreal Scale;
+        const QGraphicsItem* Requester;
 
         bool operator==(const RenderParameters& other) const
         {
@@ -88,11 +93,14 @@ private:
         }
     };
 
+    bool isRequesterActual(const QGraphicsItem* item) const;
+
     std::optional<QImage> findNearestImage(int page, qreal scale);
 
     QFuture<void> enqueueRenderRequest(RenderRequest&& request);
     void tryDequeueRenderRequest();
 
+    QGraphicsView* _view = nullptr;
     QPdfDocument* _document = nullptr;
     qreal _pixelRatio = 1.0;
 
