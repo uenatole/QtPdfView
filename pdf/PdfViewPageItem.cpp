@@ -9,6 +9,7 @@ PdfViewPageItem::PdfViewPageItem(const int number, PdfViewPageProvider* provider
     , _number(number)
     , _pointSize(_provider->document()->pagePointSize(number))
 {
+    setCacheMode(NoCache);
     assert(number >= 0 && number < _provider->document()->pageCount());
 }
 
