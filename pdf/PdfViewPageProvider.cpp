@@ -145,9 +145,7 @@ QFuture<void> PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)
 
     auto chain0 = requestRef.Promise.future();
     auto chain1 = chain0.then(QThread::currentThread(), [this, parameters=requestRef.Parameters](const QImage& image){
-        const bool inserted = _cache.insert(parameters.Page, parameters.Scale, new QImage(image));
-        qDebug() << "Cache load: page =" << parameters.Page << "scale=" << parameters.Scale << "inserted =" << inserted;
-
+        (void) _cache.insert(parameters.Page, parameters.Scale, new QImage(image));
         _renderState.reset();
         tryDequeueRenderRequest();
     });
@@ -194,7 +192,9 @@ void PdfViewPageProvider::tryDequeueRenderRequest()
             QElapsedTimer timer;
             timer.start();
             const QImage result = document->render2(page, size, cancel.get());
-            qDebug() << "Render finished: page =" << page << "scale =" << scale << " time =" << timer.elapsed() << "ms";
+
+            if (!result.isNull())
+                qDebug() << "Render finished: page =" << page << "scale =" << scale << " time =" << timer.elapsed() << "ms";
 
             promise.addResult(result);
 
