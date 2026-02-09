@@ -8,13 +8,6 @@
 PdfViewPageProvider::PdfViewPageProvider()
 {
     setCacheLimit(1 /*GiB*/ * 1024 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
-
-    _cache.setOnEraseFn([this](const auto& key)
-    {
-        const auto& page = key.first;
-        const auto& scale = key.second;
-        _cacheKeyScales[page].erase(scale);
-    });
 }
 
 void PdfViewPageProvider::setDocument(QPdfDocument* document)
@@ -35,19 +28,18 @@ void PdfViewPageProvider::setPixelRatio(const qreal ratio)
 
 void PdfViewPageProvider::setCacheLimit(const qreal bytes) const
 {
-    _cache.setMaxCost(bytes);
+    _cache.setLimit(bytes);
 }
 
 PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page, qreal scale)
 {
-    const RenderParameters parameters { page, scale };
-
-    if (const QImage* image = _cache.object(parameters); image)
+    if (const QImage* image = _cache.object(page, scale); image)
     {
-        qDebug() << "Cache hit: page =" << parameters.Page << "scale =" << parameters.Scale;
+        qDebug() << "Cache hit: page =" << page << "scale =" << scale;
         return RenderResponse { *image };
     }
 
+    const RenderParameters parameters { page, scale };
     const std::optional<QImage> nearestImage = findNearestImage(page, scale);
 
     // Check active render request for duplication
@@ -88,6 +80,19 @@ PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page,
     };
 }
 
+PdfViewPageProvider::RenderCache::RenderCache()
+{
+    _storage.setOnEraseFn([this](const std::pair<int, qreal>& key)
+    {
+        _keySets[key.first].erase(key.second);
+    });
+}
+
+QImage* PdfViewPageProvider::RenderCache::object(int page, qreal scale) const
+{
+    return _storage.object({ page, scale });
+}
+
 template<typename Set>
 auto closest_element(Set& set, const typename Set::value_type& value)
     -> decltype(set.begin())
@@ -100,17 +105,35 @@ auto closest_element(Set& set, const typename Set::value_type& value)
     return (it == set.end() || value - *prev_it <= *it - value) ? prev_it : it;
 }
 
-std::optional<QImage> PdfViewPageProvider::findNearestImage(int page, qreal scale)
+QImage* PdfViewPageProvider::RenderCache::nearestObject(int page, qreal targetScale) const
 {
-    // TODO: find nearest by (page + scale)
-
-    const auto& scales = _cacheKeyScales[page];
-    const auto closestScaleIt = closest_element(scales, scale);
+    const auto& scales = _keySets[page];
+    const auto closestScaleIt = closest_element(scales, targetScale);
 
     if (closestScaleIt == scales.end())
-        return std::nullopt;
+        return nullptr;
 
-    if (auto* image = _cache.object({ page, *closestScaleIt }); Q_LIKELY(image))
+    return _storage.object({ page, *closestScaleIt });
+}
+
+bool PdfViewPageProvider::RenderCache::insert(int page, qreal scale, QImage* image)
+{
+    if (const bool inserted = _storage.insert({ page, scale }, image, image->sizeInBytes()); Q_LIKELY(inserted))
+    {
+        _keySets[page].insert(scale);
+        return true;
+    }
+    return false;
+}
+
+void PdfViewPageProvider::RenderCache::setLimit(std::size_t bytes)
+{
+    _storage.setMaxCost(bytes);
+}
+
+std::optional<QImage> PdfViewPageProvider::findNearestImage(int page, qreal scale)
+{
+    if (auto* image = _cache.nearestObject(page, scale); image)
         return *image;
 
     return std::nullopt;
@@ -122,10 +145,7 @@ QFuture<void> PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)
 
     auto chain0 = requestRef.Promise.future();
     auto chain1 = chain0.then(QThread::currentThread(), [this, parameters=requestRef.Parameters](const QImage& image){
-        const bool inserted = _cache.insert(parameters, new QImage(image), image.sizeInBytes());
-        if (inserted)
-            _cacheKeyScales[parameters.Page].insert(parameters.Scale);
-
+        const bool inserted = _cache.insert(parameters.Page, parameters.Scale, new QImage(image));
         qDebug() << "Cache load: page =" << parameters.Page << "scale=" << parameters.Scale << "inserted =" << inserted;
 
         _renderState.reset();

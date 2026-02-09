@@ -26,7 +26,22 @@ public:
     RenderResponse requestRender(int page, qreal scale);
 
 private:
-    using CacheKey = std::pair<int, qreal>;
+    class RenderCache
+    {
+    public:
+        RenderCache();
+
+        QImage* object(int page, qreal scale) const;
+        QImage* nearestObject(int page, qreal targetScale) const;
+
+        bool insert(int page, qreal scale, QImage* image);
+
+        void setLimit(std::size_t bytes);
+
+    private:
+        mutable QCacheExt<std::pair<int, qreal>, QImage> _storage;
+        mutable QHash<int, std::set<qreal>> _keySets;
+    };
 
     struct RenderParameters
     {
@@ -36,10 +51,6 @@ private:
         bool operator==(const RenderParameters& other) const
         {
             return Page == other.Page && qFuzzyCompare(Scale, other.Scale);
-        }
-
-        operator CacheKey() const {
-            return { Page, Scale };
         }
     };
 
@@ -85,8 +96,7 @@ private:
     QPdfDocument* _document = nullptr;
     qreal _pixelRatio = 1.0;
 
-    mutable QCacheExt<CacheKey, QImage> _cache;
-    mutable QHash<int, std::set<qreal>> _cacheKeyScales;
+    mutable RenderCache _cache;
 
     std::list<RenderRequest> _requests;
     std::optional<RenderState> _renderState;
