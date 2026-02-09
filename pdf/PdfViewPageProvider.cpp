@@ -38,15 +38,17 @@ PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page,
     if (const QImage* image = _cache.object(parameters); image)
     {
         qDebug() << "Cache hit: page =" << parameters.Page << "scale =" << parameters.Scale;
-        return RenderResponses::Cached { *image };
+        return RenderResponse { *image };
     }
+
+    const std::optional<QImage> nearestImage = findNearestImage(page, scale);
 
     // Check active render request for duplication
     if (_renderState)
     {
         if (_renderState->Parameters == parameters)
         {
-            return RenderResponses::InProgress();
+            return RenderResponse { nearestImage };
         }
 
         if (_renderState->Parameters.Page == parameters.Page)
@@ -61,7 +63,7 @@ PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page,
         if (request.Parameters.Page == parameters.Page)
         {
             request.Parameters.Scale = parameters.Scale;
-            return RenderResponses::Waiting();
+            return RenderResponse { nearestImage };
         }
     }
 
@@ -73,10 +75,24 @@ PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page,
     if (!_renderState)
         tryDequeueRenderRequest();
 
-    return RenderResponses::Scheduled {
-        .NearestImage = std::nullopt, // TODO: find nearest image
-        .Signal = signal
+    return RenderResponse {
+        .NearestImage = nearestImage,
+        .RenderTicket = signal
     };
+}
+
+std::optional<QImage> PdfViewPageProvider::findNearestImage(int page, qreal scale)
+{
+    // TODO: find nearest by (page + scale)
+    for (const auto& key : _cache.keys())
+    {
+        if (page == key.first)
+        {
+            return *_cache[key];
+        }
+    }
+
+    return std::nullopt;
 }
 
 QFuture<void> PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)

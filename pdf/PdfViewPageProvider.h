@@ -18,24 +18,11 @@ public:
     void setPixelRatio(qreal ratio);
     void setCacheLimit(qreal bytes) const;
 
-    struct RenderResponses
+    struct RenderResponse
     {
-        struct Cached
-        {
-            QImage Image;
-        };
-
-        struct Scheduled
-        {
-            std::optional<QImage> NearestImage;
-            QFuture<void> Signal;
-        };
-
-        struct InProgress {};
-        struct Waiting {};
+        std::optional<QImage> NearestImage;
+        std::optional<QFuture<void>> RenderTicket;
     };
-
-    using RenderResponse = std::variant<RenderResponses::Cached, RenderResponses::Scheduled, RenderResponses::InProgress, RenderResponses::Waiting>;
 
     RenderResponse requestRender(int page, qreal scale);
 
@@ -90,6 +77,8 @@ private:
             Thread->quit();
         }
     };
+
+    std::optional<QImage> findNearestImage(int page, qreal scale);
 
     QFuture<void> enqueueRenderRequest(RenderRequest&& request);
     void tryDequeueRenderRequest();
