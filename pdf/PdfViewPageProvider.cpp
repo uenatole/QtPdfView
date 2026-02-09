@@ -33,62 +33,116 @@ void PdfViewPageProvider::setCacheLimit(const qreal bytes) const
 
 PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page, qreal scale)
 {
-    const CacheKey key { page, scale };
-    const RenderRequest request { page, scale };
+    const RenderParameters parameters { page, scale };
 
-    if (const QImage* image = _cache.object(key); image)
+    if (const QImage* image = _cache.object(parameters); image)
     {
-        qDebug() << "Cache hit: page =" << key.first << "scale =" << key.second;
+        qDebug() << "Cache hit: page =" << parameters.Page << "scale =" << parameters.Scale;
         return RenderResponses::Cached { *image };
     }
 
-    // TODO: Do not drop the active job completely but cancel and move it to the second place in the queue.
-    //       Item with cancelled render job will try to ::update() itself, and if item is visible,
-    //       the request must be marked as "actual" to not be dropped completely.
-
-    // Sometimes request may be sequentially duplicated, ignore it
-    if (_activeRenderRequestOpt && request == *_activeRenderRequestOpt)
+    // Check active render request for duplication
+    if (_renderState)
     {
-        return RenderResponses::InProgress();
+        if (_renderState->Parameters == parameters)
+        {
+            return RenderResponses::InProgress();
+        }
+
+        if (_renderState->Parameters.Page == parameters.Page)
+        {
+            _renderState.reset();
+        }
     }
 
-    _activeRenderRequestJob.cancel();
-
-    // Rendering is done in separate thread
-    _activeRenderRequestOpt = request;
-    _activeRenderRequestJob = QtConcurrent::run([document=_document, ratio=_pixelRatio, page, scale](QPromise<QImage>& promise)
+    // Check pending render requests for duplication
+    for (RenderRequest& request : _requests)
     {
-        struct PromiseCancel : QPdfDocument::ICancel {
-            explicit PromiseCancel(QPromise<QImage>& promise) : m_promise(promise) {}
-            bool isCancelled() final
-            {
-                return m_promise.isCanceled();
-            }
+        if (request.Parameters.Page == parameters.Page)
+        {
+            request.Parameters.Scale = parameters.Scale;
+            return RenderResponses::Waiting();
+        }
+    }
 
-        private:
-            QPromise<QImage>& m_promise;
-        };
+    // Enqueue new request
+    const auto signal = enqueueRenderRequest(RenderRequest {parameters});
 
-        const auto pointSize = document->pagePointSize(page);
-        const auto renderSize = pointSize * scale * ratio;
-        const auto size = renderSize.toSize();
+    // Dequeue it immediately to start render
+    // TODO: add dequeue delay to prevent from 'zoom spamming' & etc
+    if (!_renderState)
+        tryDequeueRenderRequest();
 
-        const auto cancel = std::make_unique<PromiseCancel>(promise);
+    return RenderResponses::Scheduled {
+        .NearestImage = std::nullopt, // TODO: find nearest image
+        .Signal = signal
+    };
+}
 
-        QElapsedTimer timer;
-        timer.start();
-        const QImage result = document->render2(page, size, cancel.get());
-        qDebug() << "Render finished: page =" << page << "scale =" << scale << " time =" << timer.elapsed() << "ms";
+QFuture<void> PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)
+{
+    const RenderRequest& requestRef = _requests.emplace_back(std::move(request));
 
-        promise.addResult(result);
+    auto chain0 = requestRef.Promise.future();
+    auto chain1 = chain0.then(QThread::currentThread(), [this, parameters=requestRef.Parameters](const QImage& image){
+        const bool inserted = _cache.insert(parameters, new QImage(image), image.sizeInBytes());
+        qDebug() << "Cache load: page =" << parameters.Page << "scale=" << parameters.Scale << "inserted =" << inserted;
+
+        _renderState.reset();
+        tryDequeueRenderRequest();
     });
 
-    // Caching is done in main thread
-    const auto chain = _activeRenderRequestJob.then(QThread::currentThread(), [this, key](const QImage& image){
-        _activeRenderRequestOpt = std::nullopt;
-        const bool inserted = _cache.insert(key, new QImage(image), image.sizeInBytes());
-        qDebug() << "Cache load: page =" << key.first << "scale=" << key.second << "inserted =" << inserted;
-    });
+    return chain1;
+}
 
-    return RenderResponses::Scheduled { std::nullopt, chain };
+void PdfViewPageProvider::tryDequeueRenderRequest()
+{
+    // TODO: stop active render if it's not actual now
+    // TODO: skip all unactual requests
+    // NOTE: actuality is checked based on requester visibility. TODO: add way to check if requester is visible
+
+    if (_renderState) return;
+    if (_requests.empty()) return;
+
+    // Take first request in queue
+    RenderRequest request = std::move(_requests.front());
+    _requests.pop_front();
+
+    QFuture<void> future = request.Promise.future();
+    QThread* thread = QThread::create(
+        [document=_document, page=request.Parameters.Page, scale=request.Parameters.Scale, ratio=_pixelRatio](QPromise<QImage> promise)
+        {
+            promise.start();
+
+            struct PromiseCancel : QPdfDocument::ICancel {
+                explicit PromiseCancel(QPromise<QImage>& promise) : m_promise(promise) {}
+                bool isCancelled() final
+                {
+                    return m_promise.isCanceled();
+                }
+
+            private:
+                QPromise<QImage>& m_promise;
+            };
+
+            const auto pointSize = document->pagePointSize(page);
+            const auto renderSize = pointSize * scale * ratio;
+            const auto size = renderSize.toSize();
+
+            const auto cancel = std::make_unique<PromiseCancel>(promise);
+
+            QElapsedTimer timer;
+            timer.start();
+            const QImage result = document->render2(page, size, cancel.get());
+            qDebug() << "Render finished: page =" << page << "scale =" << scale << " time =" << timer.elapsed() << "ms";
+
+            promise.addResult(result);
+
+            promise.finish();
+        }
+        , std::move(request.Promise)
+    );
+
+    thread->start();
+    _renderState.emplace(request.Parameters, future, thread);
 }

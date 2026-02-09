@@ -1,5 +1,6 @@
 #pragma once
 
+#include <forward_list>
 #include <QImage>
 #include <QFuture>
 #include <QCache>
@@ -31,29 +32,73 @@ public:
         };
 
         struct InProgress {};
+        struct Waiting {};
     };
 
-    using RenderResponse = std::variant<RenderResponses::Cached, RenderResponses::Scheduled, RenderResponses::InProgress>;
+    using RenderResponse = std::variant<RenderResponses::Cached, RenderResponses::Scheduled, RenderResponses::InProgress, RenderResponses::Waiting>;
+
     RenderResponse requestRender(int page, qreal scale);
 
 private:
-    QPdfDocument* _document = nullptr;
-    qreal _pixelRatio = 1.0;
-
     using CacheKey = std::pair<int, qreal>;
-    mutable QCache<CacheKey, QImage> _cache;
 
-    struct RenderRequest
+    struct RenderParameters
     {
         int Page;
         qreal Scale;
 
-        bool operator==(const RenderRequest& other) const
+        bool operator==(const RenderParameters& other) const
         {
             return Page == other.Page && qFuzzyCompare(Scale, other.Scale);
         }
+
+        operator CacheKey() const {
+            return { Page, Scale };
+        }
     };
 
-    mutable std::optional<RenderRequest> _activeRenderRequestOpt;
-    mutable QFuture<QImage> _activeRenderRequestJob;
+    struct RenderRequest
+    {
+        RenderParameters Parameters {};
+        QPromise<QImage> Promise;
+
+        explicit RenderRequest(const RenderParameters& parameters)
+            : Parameters(parameters)
+        {}
+
+        RenderRequest(RenderRequest&& other) noexcept
+        {
+            Parameters = other.Parameters;
+            Promise = std::move(other.Promise);
+        }
+    };
+
+    struct RenderState {
+        RenderParameters Parameters;
+        QFuture<void> Future;
+        std::unique_ptr<QThread> Thread;
+
+        RenderState(const RenderParameters& parameters, QFuture<void> future, QThread* thread)
+            : Parameters(parameters)
+            , Future(std::move(future))
+            , Thread(thread)
+        {}
+
+        ~RenderState()
+        {
+            Future.cancel();
+            Thread->quit();
+        }
+    };
+
+    QFuture<void> enqueueRenderRequest(RenderRequest&& request);
+    void tryDequeueRenderRequest();
+
+    QPdfDocument* _document = nullptr;
+    qreal _pixelRatio = 1.0;
+
+    mutable QCache<CacheKey, QImage> _cache;
+
+    std::list<RenderRequest> _requests;
+    std::optional<RenderState> _renderState;
 };

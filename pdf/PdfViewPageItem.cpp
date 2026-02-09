@@ -63,6 +63,7 @@ void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
                     update();
                 });
         },
-        [&](PdfViewPageProvider::RenderResponses::InProgress){}
+        [&](PdfViewPageProvider::RenderResponses::InProgress){},
+        [&](PdfViewPageProvider::RenderResponses::Waiting){},
     }, response);
 }
