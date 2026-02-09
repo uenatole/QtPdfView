@@ -8,6 +8,13 @@
 PdfViewPageProvider::PdfViewPageProvider()
 {
     setCacheLimit(1 /*GiB*/ * 1024 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
+
+    _cache.setOnEraseFn([this](const auto& key)
+    {
+        const auto& page = key.first;
+        const auto& scale = key.second;
+        _cacheKeyScales[page].erase(scale);
+    });
 }
 
 void PdfViewPageProvider::setDocument(QPdfDocument* document)
@@ -81,16 +88,30 @@ PdfViewPageProvider::RenderResponse PdfViewPageProvider::requestRender(int page,
     };
 }
 
+template<typename Set>
+auto closest_element(Set& set, const typename Set::value_type& value)
+    -> decltype(set.begin())
+{
+    const auto it = set.lower_bound(value);
+    if (it == set.begin())
+        return it;
+
+    const auto prev_it = std::prev(it);
+    return (it == set.end() || value - *prev_it <= *it - value) ? prev_it : it;
+}
+
 std::optional<QImage> PdfViewPageProvider::findNearestImage(int page, qreal scale)
 {
     // TODO: find nearest by (page + scale)
-    for (const auto& key : _cache.keys())
-    {
-        if (page == key.first)
-        {
-            return *_cache[key];
-        }
-    }
+
+    const auto& scales = _cacheKeyScales[page];
+    const auto closestScaleIt = closest_element(scales, scale);
+
+    if (closestScaleIt == scales.end())
+        return std::nullopt;
+
+    if (auto* image = _cache.object({ page, *closestScaleIt }); Q_LIKELY(image))
+        return *image;
 
     return std::nullopt;
 }
@@ -102,6 +123,9 @@ QFuture<void> PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)
     auto chain0 = requestRef.Promise.future();
     auto chain1 = chain0.then(QThread::currentThread(), [this, parameters=requestRef.Parameters](const QImage& image){
         const bool inserted = _cache.insert(parameters, new QImage(image), image.sizeInBytes());
+        if (inserted)
+            _cacheKeyScales[parameters.Page].insert(parameters.Scale);
+
         qDebug() << "Cache load: page =" << parameters.Page << "scale=" << parameters.Scale << "inserted =" << inserted;
 
         _renderState.reset();

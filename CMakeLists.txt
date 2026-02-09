@@ -12,6 +12,7 @@ add_subdirectory(3rdparty/qtwebengine)
 find_package(Qt6 COMPONENTS Widgets)
 
 add_executable(MyPdfView
+        custom/QCacheExt.h
         pdf/PdfView.cpp
         pdf/PdfView.h
         pdf/PdfViewPageItem.cpp

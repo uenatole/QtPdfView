@@ -1,9 +1,8 @@
 #pragma once
 
-#include <forward_list>
 #include <QImage>
 #include <QFuture>
-#include <QCache>
+#include "../custom/QCacheExt.h"
 
 class QPdfDocument;
 
@@ -86,7 +85,8 @@ private:
     QPdfDocument* _document = nullptr;
     qreal _pixelRatio = 1.0;
 
-    mutable QCache<CacheKey, QImage> _cache;
+    mutable QCacheExt<CacheKey, QImage> _cache;
+    mutable QHash<int, std::set<qreal>> _cacheKeyScales;
 
     std::list<RenderRequest> _requests;
     std::optional<RenderState> _renderState;
