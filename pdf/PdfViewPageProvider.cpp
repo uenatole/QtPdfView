@@ -9,6 +9,10 @@
 PdfViewPageProvider::PdfViewPageProvider()
 {
     setCacheLimit(1 /*GiB*/ * 1024 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
+
+    _dequeueDelayTimer.setSingleShot(true);
+    _dequeueDelayTimer.setInterval(100);
+    QObject::connect(&_dequeueDelayTimer, &QTimer::timeout, [this]{ tryDequeueRenderRequest(); });
 }
 
 void PdfViewPageProvider::setDocument(QPdfDocument* document)
@@ -75,10 +79,9 @@ std::optional<QImage> PdfViewPageProvider::request(QGraphicsItem* requester, int
     // Enqueue new request
     enqueueRenderRequest(RenderRequest {parameters});
 
-    // Dequeue it immediately to start render
-    // TODO: add dequeue delay to prevent from 'zoom spamming' & etc
+    // Dequeue it delayed to start render and let for some requests to be outdated
     if (!_renderState)
-        tryDequeueRenderRequest();
+        tryDequeueRenderRequestDelayed();
 
     return nearestImage;
 }
@@ -154,6 +157,11 @@ std::optional<QImage> PdfViewPageProvider::findNearestImage(int page, qreal scal
 void PdfViewPageProvider::enqueueRenderRequest(RenderRequest&& request)
 {
     _requests.emplace_back(std::move(request));
+}
+
+void PdfViewPageProvider::tryDequeueRenderRequestDelayed()
+{
+    _dequeueDelayTimer.start();
 }
 
 void PdfViewPageProvider::tryDequeueRenderRequest()

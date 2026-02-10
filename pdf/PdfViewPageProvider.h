@@ -2,6 +2,7 @@
 
 #include <QFuture>
 #include <QGraphicsView>
+#include <QTimer>
 
 #include "../custom/QCacheExt.h"
 
@@ -72,11 +73,14 @@ private:
     std::optional<QImage> findNearestImage(int page, qreal scale);
 
     void enqueueRenderRequest(RenderRequest&& request);
+    void tryDequeueRenderRequestDelayed();
     void tryDequeueRenderRequest();
 
     QGraphicsView* _view = nullptr;
     QPdfDocument* _document = nullptr;
     qreal _pixelRatio = 1.0;
+
+    QTimer _dequeueDelayTimer;
 
     mutable RenderCache _cache;
 
