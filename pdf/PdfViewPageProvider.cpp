@@ -11,7 +11,7 @@ PdfViewPageProvider::PdfViewPageProvider()
     setCacheLimit(1 /*GiB*/ * 1024 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
 
     _dequeueDelayTimer.setSingleShot(true);
-    _dequeueDelayTimer.setInterval(100);
+    _dequeueDelayTimer.setInterval(50);
     QObject::connect(&_dequeueDelayTimer, &QTimer::timeout, [this]{ tryDequeueRenderRequest(); });
 }
 
@@ -39,6 +39,11 @@ void PdfViewPageProvider::setPixelRatio(const qreal ratio)
 void PdfViewPageProvider::setCacheLimit(const qreal bytes) const
 {
     _cache.setLimit(bytes);
+}
+
+void PdfViewPageProvider::setRenderDelay(int ms)
+{
+    _dequeueDelayTimer.setInterval(ms);
 }
 
 std::optional<QImage> PdfViewPageProvider::request(QGraphicsItem* requester, int page, qreal scale)

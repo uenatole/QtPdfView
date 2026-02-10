@@ -20,6 +20,7 @@ public:
 
     void setPixelRatio(qreal ratio);
     void setCacheLimit(qreal bytes) const;
+    void setRenderDelay(int ms);
 
     std::optional<QImage> request(QGraphicsItem* requester, int page, qreal scale);
 
