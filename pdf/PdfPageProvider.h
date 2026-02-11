@@ -8,13 +8,22 @@
 
 class QPdfDocument;
 
-class PdfViewPageProvider
+class PdfPageProvider
 {
 public:
-    PdfViewPageProvider();
+    struct Interface
+    {
+        using RequesterID = std::size_t;
+
+        virtual ~Interface() = default;
+        [[nodiscard]] virtual bool isActual(RequesterID id) const = 0;
+        virtual bool notify(RequesterID id) = 0;
+    };
+
+    PdfPageProvider();
 
     void setDocument(QPdfDocument* document);
-    void setView(QGraphicsView* view);
+    void setInterface(Interface* interface);
 
     QPdfDocument* document() const;
 
@@ -22,7 +31,7 @@ public:
     void setCacheLimit(qreal bytes) const;
     void setRenderDelay(int ms);
 
-    std::optional<QImage> request(QGraphicsItem* requester, int page, qreal scale);
+    std::optional<QImage> request(Interface::RequesterID requester, int page, qreal scale);
 
 private:
     class RenderCache
@@ -46,7 +55,7 @@ private:
     {
         int Page;
         qreal Scale;
-        QGraphicsItem* Requester;
+        Interface::RequesterID Requester;
 
         bool operator==(const RenderRequest& other) const
         {
@@ -69,15 +78,13 @@ private:
         }
     };
 
-    bool isRequesterActual(const QGraphicsItem* item) const;
-
     std::optional<QImage> findNearestImage(int page, qreal scale);
 
     void enqueueRenderRequest(RenderRequest&& request);
     void tryDequeueRenderRequestDelayed();
     void tryDequeueRenderRequest();
 
-    QGraphicsView* _view = nullptr;
+    Interface* _interface = nullptr;
     QPdfDocument* _document = nullptr;
     qreal _pixelRatio = 1.0;
 

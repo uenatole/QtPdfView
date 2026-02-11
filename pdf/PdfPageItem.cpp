@@ -1,10 +1,10 @@
-#include "PdfViewPageItem.h"
+#include "PdfPageItem.h"
 
 #include <QPdfDocument>
 
-#include "PdfViewPageProvider.h"
+#include "PdfPageProvider.h"
 
-PdfViewPageItem::PdfViewPageItem(const int number, PdfViewPageProvider* provider)
+PdfPageItem::PdfPageItem(const int number, PdfPageProvider* provider)
     : _provider(provider)
     , _number(number)
     , _pointSize(_provider->document()->pagePointSize(number))
@@ -13,12 +13,12 @@ PdfViewPageItem::PdfViewPageItem(const int number, PdfViewPageProvider* provider
     assert(number >= 0 && number < _provider->document()->pageCount());
 }
 
-QRectF PdfViewPageItem::boundingRect() const
+QRectF PdfPageItem::boundingRect() const
 {
     return QRectF(QPointF(0, 0), _pointSize);
 }
 
-void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     Q_UNUSED(option);
 
@@ -26,6 +26,6 @@ void PdfViewPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
 
     painter->fillRect(boundingRect(), Qt::white);
 
-    if (const auto image = _provider->request(this, _number, scale); image)
+    if (const auto image = _provider->request(reinterpret_cast<PdfPageProvider::Interface::RequesterID>(this), _number, scale); image)
         painter->drawImage(boundingRect(), *image);
 }

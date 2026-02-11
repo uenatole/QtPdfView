@@ -5,14 +5,40 @@
 #include <QGraphicsEffect>
 #include <QWheelEvent>
 
-#include "PdfViewPageItem.h"
-#include "PdfViewPageProvider.h"
+#include "PdfPageItem.h"
+#include "PdfPageProvider.h"
 
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
-    , m_provider(new PdfViewPageProvider())
+    , m_provider(new PdfPageProvider())
 {
-    m_provider->setView(this);
+    struct Interface : PdfPageProvider::Interface
+    {
+        explicit Interface(QGraphicsView* view) : _view(view){}
+
+        [[nodiscard]] bool isActual(const RequesterID id) const override
+        {
+            const auto item = reinterpret_cast<QGraphicsItem*>(id);
+
+            const QRect portRect = _view->viewport()->rect();
+            const QRectF sceneRect = _view->mapToScene(portRect).boundingRect();
+            const QRectF itemRect = item->mapRectFromScene(sceneRect);
+
+            return itemRect.intersects(item->boundingRect());
+        }
+
+        bool notify(const RequesterID id) override
+        {
+            const auto item = reinterpret_cast<QGraphicsItem*>(id);
+            item->update();
+            return true;
+        }
+
+    private:
+        QGraphicsView* _view;
+    };
+
+    m_provider->setInterface(new Interface(this));
     // TODO: keep track QWindow::screenChanged
     m_provider->setPixelRatio(devicePixelRatio());
 }
@@ -35,7 +61,7 @@ void PdfView::setDocument(QPdfDocument* document)
     {
         QSizeF pagePointSize = document->pagePointSize(page);
 
-        const auto item = new PdfViewPageItem(page, m_provider.get());
+        const auto item = new PdfPageItem(page, m_provider.get());
         item->setPos(documentMargins, yCursor);
 
         yCursor += pagePointSize.height() + documentMargins;

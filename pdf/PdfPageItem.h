@@ -2,19 +2,19 @@
 
 #include <QGraphicsItem>
 
-class PdfViewPageProvider;
+class PdfPageProvider;
 
-class PdfViewPageItem : public QGraphicsItem
+class PdfPageItem : public QGraphicsItem
 {
 public:
-    PdfViewPageItem(int number, PdfViewPageProvider* provider);
+    PdfPageItem(int number, PdfPageProvider* provider);
 
     QRectF boundingRect() const override;
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
 private:
-    PdfViewPageProvider* const _provider;
+    PdfPageProvider* const _provider;
 
     const int _number;
     const QSizeF _pointSize;
