@@ -1,7 +1,7 @@
 #include <QApplication>
-
-#include "pdf/PdfView.h"
 #include <QPdfDocument>
+
+#include "PdfView.h"
 
 int main(int argc, char** argv)
 {

@@ -4,7 +4,7 @@
 #include <QGraphicsView>
 #include <QTimer>
 
-#include "../custom/QCacheExt.h"
+#include "custom/QCacheExt.h"
 
 class QPdfDocument;
 
