@@ -23,7 +23,6 @@ public:
     ~PdfPageProvider();
 
     void setDocument(QPdfDocument* document) const;
-    QPdfDocument* document() const;
 
     void setInterface(Interface* interface) const;
     Interface* interface() const;
@@ -31,6 +30,8 @@ public:
     void setPixelRatio(qreal ratio) const;
     void setCacheLimit(qreal bytes) const;
     void setRenderDelay(int ms) const;
+
+    QSizeF pagePointSize(int page) const;
 
     std::optional<QImage> request(Interface::RequesterID requester, int page, qreal scale) const;
 

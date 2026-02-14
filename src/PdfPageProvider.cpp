@@ -274,11 +274,6 @@ PdfPageProvider::Interface* PdfPageProvider::interface() const
     return d_ptr->interface;
 }
 
-QPdfDocument* PdfPageProvider::document() const
-{
-    return d_ptr->document;
-}
-
 void PdfPageProvider::setPixelRatio(const qreal ratio) const
 {
     // TODO: invalidate cache (?) or take ratio in account with {scale} (!)
@@ -293,6 +288,11 @@ void PdfPageProvider::setCacheLimit(const qreal bytes) const
 void PdfPageProvider::setRenderDelay(const int ms) const
 {
     d_ptr->dequeueDelayTimer.setInterval(ms);
+}
+
+QSizeF PdfPageProvider::pagePointSize(int page) const
+{
+    return d_ptr->document->pagePointSize(page);
 }
 
 std::optional<QImage> PdfPageProvider::request(const Interface::RequesterID requester, const int page, const qreal scale) const

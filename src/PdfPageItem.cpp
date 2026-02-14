@@ -13,7 +13,7 @@ struct PdfPageItem::Private
     Private(PdfPageProvider* provider, const int number)
         : provider(provider)
         , number(number)
-        , pointSize(provider->document()->pagePointSize(number))
+        , pointSize(provider->pagePointSize(number))
     {}
 
 private:
