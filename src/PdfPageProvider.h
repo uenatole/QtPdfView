@@ -4,6 +4,7 @@
 #include <optional>
 #include <QImage>
 #include <QtTypes>
+#include <QPdfSelection> // TODO: hide under another abstraction
 
 class QPdfDocument;
 
@@ -32,6 +33,7 @@ public:
     void setRenderDelay(int ms) const;
 
     QSizeF pagePointSize(int page) const;
+    QPdfSelection getSelection(int page, QPointF start = {}, QPointF end = {}) const;
 
     std::optional<QImage> request(Interface::RequesterID requester, int page, qreal scale) const;
 
