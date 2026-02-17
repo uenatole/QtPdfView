@@ -295,6 +295,11 @@ QSizeF PdfPageProvider::pagePointSize(int page) const
     return d_ptr->document->pagePointSize(page);
 }
 
+QPdfSelection PdfPageProvider::getSelection(const int page, QPointF start, QPointF end) const
+{
+    return d_ptr->document->getSelection(page, start, end);
+}
+
 std::optional<QImage> PdfPageProvider::request(const Interface::RequesterID requester, const int page, const qreal scale) const
 {
     return d_ptr->request(requester, page, scale);
