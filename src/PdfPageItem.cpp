@@ -20,6 +20,8 @@ private:
     PdfPageProvider* const provider;
     const int number;
     const QSizeF pointSize;
+
+    QRectF selectionRect;
 };
 
 PdfPageItem::PdfPageItem(PdfPageProvider* provider, const int number)
@@ -46,4 +48,25 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 
     if (const auto image = d_ptr->provider->request(reinterpret_cast<PdfPageProvider::Interface::RequesterID>(this), d_ptr->number, scale); image)
         painter->drawImage(boundingRect(), *image);
+
+    if (const QRectF rect = d_ptr->selectionRect; !rect.isNull())
+    {
+        // TODO: add selection styling
+
+        const QPdfSelection selection = d_ptr->provider->getSelection(d_ptr->number, rect.topLeft(), rect.bottomRight());
+
+        for (const QPolygonF& polygon : selection.bounds())
+            painter->drawPolygon(polygon);
+    }
+}
+
+void PdfPageItem::SetSelectionRect(const QRectF& rect)
+{
+    d_ptr->selectionRect = rect;
+    update();
+}
+
+QRectF PdfPageItem::GetSelectionRect() const
+{
+    return d_ptr->selectionRect;
 }

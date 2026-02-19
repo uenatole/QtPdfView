@@ -14,6 +14,9 @@ public:
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
+    void SetSelectionRect(const QRectF& rect);
+    QRectF GetSelectionRect() const;
+
 private:
     struct Private;
     std::unique_ptr<Private> d_ptr;
