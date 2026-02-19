@@ -27,6 +27,7 @@ protected:
 
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
     bool m_wheelZoomingDisabled = true;

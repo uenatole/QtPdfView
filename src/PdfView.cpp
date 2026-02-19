@@ -151,6 +151,13 @@ void PdfView::mousePressEvent(QMouseEvent* event)
 
 void PdfView::mouseReleaseEvent(QMouseEvent* event)
 {
+    m_selectionStart.reset();
+}
+
+void PdfView::mouseMoveEvent(QMouseEvent* event)
+{
+    // NOTE: this progressive selection method is quite inefficient due to selection from the very beginning on every update.
+    // TODO: provide stateful selection API to make it truly progressive.
     if (m_selectionStart)
     {
         const auto first = *m_selectionStart;
@@ -168,9 +175,9 @@ void PdfView::mouseReleaseEvent(QMouseEvent* event)
                 const QRectF pageIntersectionRect = page->mapRectFromScene(sceneIntersectionRect);
                 page->SetSelectionRect(pageIntersectionRect);
             }
-
-        m_selectionStart.reset();
     }
+
+    QGraphicsView::mouseMoveEvent(event);
 }
 
 
