@@ -53,9 +53,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     {
         // TODO: add selection styling
 
-        const QPdfSelection selection = d_ptr->provider->getSelection(d_ptr->number, rect.topLeft(), rect.bottomRight());
-
-        for (const QPolygonF& polygon : selection.bounds())
+        for (const QPdfSelection selection = GetSelection(); const QPolygonF& polygon : selection.bounds())
             painter->drawPolygon(polygon);
     }
 }
@@ -66,7 +64,8 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
     update();
 }
 
-QRectF PdfPageItem::GetSelectionRect() const
+QPdfSelection PdfPageItem::GetSelection() const
 {
-    return d_ptr->selectionRect;
+    const auto rect = d_ptr->selectionRect;
+    return d_ptr->provider->getSelection(d_ptr->number, rect.topLeft(), rect.bottomRight());
 }

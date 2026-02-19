@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QGraphicsItem>
+#include <QPdfSelection>
 
 class PdfPageProvider;
 
@@ -15,7 +16,7 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
     void SetSelectionRect(const QRectF& rect);
-    QRectF GetSelectionRect() const;
+    QPdfSelection GetSelection() const;
 
 private:
     struct Private;
