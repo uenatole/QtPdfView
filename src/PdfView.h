@@ -3,16 +3,28 @@
 #include <QGraphicsView>
 #include <QWidget>
 
+#include <QPdfSelection>
+
 class PdfPageProvider;
 class QPdfDocument;
 
-class PdfView : QGraphicsView
+// NOTE: right now depends on QPdfSelection and used for convenience
+// TODO: migrate from Qt::Pdf prior to own implementation
+struct PdfViewSelection
+{
+    explicit PdfViewSelection(const QList<QPdfSelection>& selections);
+    void copyToClipboard(QClipboard::Mode mode = QClipboard::Clipboard) const;
+
+private:
+    QList<QPdfSelection> m_selections;
+};
+
+// TODO: hide QGraphicsView
+class PdfView : public QGraphicsView
 {
 public:
     explicit PdfView(QWidget* parent = nullptr);
     ~PdfView() override;
-
-    using QGraphicsView::show;
 
     void setDocument(QPdfDocument* document);
 
@@ -21,6 +33,8 @@ public:
 
     void setWheelZooming(bool enabled = true);
     bool wheelZooming() const;
+
+    PdfViewSelection getSelection() const;
 
 protected:
     void wheelEvent(QWheelEvent*) override;

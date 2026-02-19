@@ -8,6 +8,19 @@
 #include "PdfPageItem.h"
 #include "PdfPageProvider.h"
 
+PdfViewSelection::PdfViewSelection(const QList<QPdfSelection>& selections)
+    : m_selections(selections)
+{}
+
+void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
+{
+    QString text;
+    for (const auto& selection : m_selections)
+        text += selection.text();
+
+    QGuiApplication::clipboard()->setText(text, mode);
+}
+
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
     , m_provider(new PdfPageProvider())
@@ -92,6 +105,17 @@ void PdfView::setWheelZooming(bool enabled)
 bool PdfView::wheelZooming() const
 {
     return m_wheelZoomingDisabled;
+}
+
+PdfViewSelection PdfView::getSelection() const
+{
+    QList<QPdfSelection> selections;
+
+    for (const auto item : items())
+        if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
+            selections.push_back(page->GetSelection());
+
+    return PdfViewSelection { selections };
 }
 
 void PdfView::wheelEvent(QWheelEvent* event)
