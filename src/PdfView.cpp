@@ -137,4 +137,40 @@ void PdfView::wheelEvent(QWheelEvent* event)
     }
 }
 
+void PdfView::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        for (const auto item : items())
+            if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
+                page->SetSelectionRect({});
+
+        m_selectionStart = mapToScene(event->pos());
+    }
+}
+
+void PdfView::mouseReleaseEvent(QMouseEvent* event)
+{
+    if (m_selectionStart)
+    {
+        const auto first = *m_selectionStart;
+        const auto second = mapToScene(event->pos());
+        const auto selectionRect = QRectF(first, second);
+
+        for (const auto item : items())
+            if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
+            {
+                const QRectF sceneIntersectionRect = selectionRect.intersected(page->sceneBoundingRect());
+
+                if (sceneIntersectionRect.isNull())
+                    continue;
+
+                const QRectF pageIntersectionRect = page->mapRectFromScene(sceneIntersectionRect);
+                page->SetSelectionRect(pageIntersectionRect);
+            }
+
+        m_selectionStart.reset();
+    }
+}
+
 

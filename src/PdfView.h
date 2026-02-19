@@ -25,7 +25,12 @@ public:
 protected:
     void wheelEvent(QWheelEvent*) override;
 
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
 private:
     bool m_wheelZoomingDisabled = true;
     std::unique_ptr<PdfPageProvider> m_provider;
+
+    std::optional<QPointF> m_selectionStart;
 };
