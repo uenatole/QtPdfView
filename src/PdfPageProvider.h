@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QtTypes>
 #include <QPdfSelection> // TODO: hide under another abstraction
+#include <QPdfLink>
 
 class QPdfDocument;
 
@@ -34,6 +35,8 @@ public:
 
     QSizeF pagePointSize(int page) const;
     QPdfSelection getSelection(int page, QPointF start = {}, QPointF end = {}) const;
+
+    QPdfLink getLinkAt(int page, QPointF pos) const;
 
     std::optional<QImage> request(Interface::RequesterID requester, int page, qreal scale) const;
 
