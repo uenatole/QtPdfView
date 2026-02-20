@@ -18,6 +18,9 @@ public:
     void SetSelectionRect(const QRectF& rect);
     QPdfSelection GetSelection() const;
 
+protected:
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+
 private:
     struct Private;
     std::unique_ptr<Private> d_ptr;

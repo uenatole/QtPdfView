@@ -3,6 +3,7 @@
 
 #include <QPainter>
 #include <QPdfDocument>
+#include <QGraphicsSceneHoverEvent>
 
 #include "PdfPageProvider.h"
 
@@ -28,6 +29,7 @@ PdfPageItem::PdfPageItem(PdfPageProvider* provider, const int number)
     : d_ptr(new Private(provider, number))
 {
     setCacheMode(NoCache);
+    setAcceptHoverEvents(true);
     assert(number >= 0 && number < _provider->document()->pageCount());
 }
 
@@ -68,4 +70,15 @@ QPdfSelection PdfPageItem::GetSelection() const
 {
     const auto rect = d_ptr->selectionRect;
     return d_ptr->provider->getSelection(d_ptr->number, rect.topLeft(), rect.bottomRight());
+}
+
+void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    // NOTE: QPdfLink from QPdfModel has wrong page number in many cases, so just check rectangles
+    if (const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, event->pos()); !link.rectangles().empty())
+    {
+        qDebug() << link.toString();
+    }
+
+    QGraphicsItem::hoverMoveEvent(event);
 }

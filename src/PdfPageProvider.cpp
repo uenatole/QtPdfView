@@ -3,6 +3,7 @@
 #include <QElapsedTimer>
 #include <QGraphicsItem>
 #include <QPdfDocument>
+#include <QPdfLinkModel>
 #include <QScreen>
 #include <QTimer>
 #include <QtConcurrent/QtConcurrentRun>
@@ -249,6 +250,8 @@ private:
 
     std::list<RenderRequest> requests;
     std::optional<RenderState> renderState;
+
+    QPdfLinkModel linkModel;
 };
 
 PdfPageProvider::PdfPageProvider()
@@ -262,6 +265,7 @@ PdfPageProvider::~PdfPageProvider() = default;
 void PdfPageProvider::setDocument(QPdfDocument* document) const
 {
     d_ptr->document = document;
+    d_ptr->linkModel.setDocument(document);
 }
 
 void PdfPageProvider::setInterface(Interface* interface) const
@@ -298,6 +302,12 @@ QSizeF PdfPageProvider::pagePointSize(int page) const
 QPdfSelection PdfPageProvider::getSelection(const int page, QPointF start, QPointF end) const
 {
     return d_ptr->document->getSelection(page, start, end);
+}
+
+QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
+{
+    d_ptr->linkModel.setPage(page);
+    return d_ptr->linkModel.linkAt(pos);
 }
 
 std::optional<QImage> PdfPageProvider::request(const Interface::RequesterID requester, const int page, const qreal scale) const
