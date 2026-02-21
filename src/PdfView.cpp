@@ -140,8 +140,30 @@ void PdfView::processLink(const QPdfLink& link)
 {
     if (const auto url = link.url(); url.isValid())
         QDesktopServices::openUrl(url);
+    else
+    {
+        const auto number = link.page();
+        const auto location = link.location();
+        const auto zoom = link.zoom();
 
-    // TODO: process other link types
+        // TODO: optimize search
+        for (const auto item : items())
+            if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
+                if (page->Number() == number)
+                {
+                    // TODO: make zoom change respect optional
+                    QTransform t = transform();
+                    t.setMatrix(
+                        zoom, t.m12(), t.m13(),
+                        t.m21(), zoom, t.m23(),
+                        t.m31(), t.m32(), t.m33()
+                    );
+
+                    setTransform(t);
+                    page->ensureVisible({ location, location });
+                    break;
+                }
+    }
 
     qDebug() << link.toString();
 }
