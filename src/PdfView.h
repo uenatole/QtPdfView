@@ -4,6 +4,7 @@
 #include <QWidget>
 
 #include <QPdfSelection>
+#include "PdfPageItem.h"
 
 class PdfPageProvider;
 class QPdfDocument;
@@ -36,6 +37,8 @@ public:
 
     PdfViewSelection getSelection() const;
 
+    void processLink(const QPdfLink& link);
+
 protected:
     void wheelEvent(QWheelEvent*) override;
 
@@ -46,6 +49,7 @@ protected:
 private:
     bool m_wheelZoomingDisabled = true;
     std::unique_ptr<PdfPageProvider> m_provider;
+    std::unique_ptr<PdfPageItem::Feedback> m_feedback;
 
     std::optional<QPointF> m_selectionStart;
 };

@@ -12,14 +12,17 @@ struct PdfPageItem::Private
 {
     friend class PdfPageItem;
 
-    Private(PdfPageProvider* provider, const int number)
+    Private(PdfPageProvider* provider, Feedback* feedback, const int number)
         : provider(provider)
+        , feedback(feedback)
         , number(number)
         , pointSize(provider->pagePointSize(number))
     {}
 
 private:
     PdfPageProvider* const provider;
+    Feedback* const feedback;
+
     const int number;
     const QSizeF pointSize;
 
@@ -27,8 +30,8 @@ private:
     QPdfLink currentLink;
 };
 
-PdfPageItem::PdfPageItem(PdfPageProvider* provider, const int number)
-    : d_ptr(new Private(provider, number))
+PdfPageItem::PdfPageItem(PdfPageProvider* provider, Feedback* feedback, const int number)
+    : d_ptr(new Private(provider, feedback, number))
 {
     setCacheMode(NoCache);
     setAcceptHoverEvents(true);
@@ -100,6 +103,12 @@ void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
+void PdfPageItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    tryLinkPress(event->pos());
+    QGraphicsItem::mousePressEvent(event);
+}
+
 void PdfPageItem::tryLinkHover(const QPointF pos)
 {
     const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, pos);
@@ -113,4 +122,12 @@ void PdfPageItem::tryLinkHover(const QPointF pos)
 
     d_ptr->currentLink = link;
     update();
+}
+
+void PdfPageItem::tryLinkPress(const QPointF pos)
+{
+    const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, pos);
+
+    if (link.isValid())
+        d_ptr->feedback->linkPressed(link);
 }

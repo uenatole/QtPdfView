@@ -48,11 +48,25 @@ namespace
     private:
         QGraphicsView* _view;
     };
+
+    struct PageItemFeedback : PdfPageItem::Feedback
+    {
+        explicit PageItemFeedback(PdfView* view) : _view(view){}
+
+        void linkPressed(const QPdfLink& link) override
+        {
+            _view->processLink(link);
+        }
+
+    private:
+        PdfView* const _view;
+    };
 }
 
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
     , m_provider(new PdfPageProvider())
+    , m_feedback(new PageItemFeedback(this))
 {
     m_provider->setFeedback(new ProviderFeedback(this));
     // TODO: keep track QWindow::screenChanged
@@ -77,7 +91,7 @@ void PdfView::setDocument(QPdfDocument* document)
     {
         QSizeF pagePointSize = document->pagePointSize(page);
 
-        const auto item = new PdfPageItem(m_provider.get(), page);
+        const auto item = new PdfPageItem(m_provider.get(), m_feedback.get(), page);
         item->setPos(documentMargins, yCursor);
 
         yCursor += pagePointSize.height() + documentMargins;
@@ -119,6 +133,11 @@ PdfViewSelection PdfView::getSelection() const
             selections.push_back(page->GetSelection());
 
     return PdfViewSelection { selections };
+}
+
+void PdfView::processLink(const QPdfLink& link)
+{
+    qDebug() << link.toString();
 }
 
 void PdfView::wheelEvent(QWheelEvent* event)
@@ -174,11 +193,15 @@ void PdfView::mousePressEvent(QMouseEvent* event)
 
         m_selectionStart = mapToScene(event->pos());
     }
+
+    QGraphicsView::mousePressEvent(event);
 }
 
 void PdfView::mouseReleaseEvent(QMouseEvent* event)
 {
     m_selectionStart.reset();
+
+    QGraphicsView::mouseReleaseEvent(event);
 }
 
 void PdfView::mouseMoveEvent(QMouseEvent* event)
