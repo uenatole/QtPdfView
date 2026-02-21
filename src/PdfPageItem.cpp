@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QPdfDocument>
 #include <QGraphicsSceneHoverEvent>
+#include <QCursor>
 
 #include "PdfPageProvider.h"
 
@@ -66,6 +67,12 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 
         for (const QRectF rect : d_ptr->currentLink.rectangles())
             painter->drawRect(rect);
+
+        setCursor(Qt::PointingHandCursor);
+    }
+    else
+    {
+        unsetCursor();
     }
 }
 
