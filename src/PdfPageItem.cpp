@@ -91,6 +91,11 @@ QPdfSelection PdfPageItem::GetSelection() const
     return d_ptr->provider->getSelection(d_ptr->number, rect.topLeft(), rect.bottomRight());
 }
 
+int PdfPageItem::Number() const
+{
+    return d_ptr->number;
+}
+
 void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
     tryLinkHover(event->pos());

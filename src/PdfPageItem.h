@@ -25,6 +25,8 @@ public:
     void SetSelectionRect(const QRectF& rect);
     QPdfSelection GetSelection() const;
 
+    int Number() const;
+
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;

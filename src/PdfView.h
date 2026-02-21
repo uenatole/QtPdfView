@@ -37,6 +37,7 @@ public:
 
     PdfViewSelection getSelection() const;
 
+    // TODO: hide it
     void processLink(const QPdfLink& link);
 
 protected:
