@@ -104,7 +104,8 @@ void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 
 void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    tryLinkHover(event->pos());
+    d_ptr->currentLink = QPdfLink();
+    update();
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
