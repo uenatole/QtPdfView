@@ -50,7 +50,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 
     painter->fillRect(boundingRect(), Qt::white);
 
-    if (const auto image = d_ptr->provider->request(reinterpret_cast<PdfPageProvider::Interface::RequesterID>(this), d_ptr->number, scale); image)
+    if (const auto image = d_ptr->provider->request(reinterpret_cast<PdfPageProvider::Feedback::RequesterID>(this), d_ptr->number, scale); image)
         painter->drawImage(boundingRect(), *image);
 
     if (const QRectF rect = d_ptr->selectionRect; !rect.isNull())

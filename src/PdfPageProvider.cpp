@@ -75,7 +75,7 @@ namespace
     {
         int Page;
         qreal Scale;
-        PdfPageProvider::Interface::RequesterID Requester;
+        PdfPageProvider::Feedback::RequesterID Requester;
 
         bool operator==(const RenderRequest& other) const
         {
@@ -111,7 +111,7 @@ struct PdfPageProvider::Private
         QObject::connect(&dequeueDelayTimer, &QTimer::timeout, [this]{ tryDequeueRenderRequest(); });
     }
 
-    std::optional<QImage> request(const Interface::RequesterID requester, const int page, const qreal scale)
+    std::optional<QImage> request(const Feedback::RequesterID requester, const int page, const qreal scale)
     {
         if (const QImage* image = cache.object(page, scale); image)
         {
@@ -240,7 +240,7 @@ private:
         renderState.emplace(request, future);
     }
 
-    Interface* interface = nullptr;
+    Feedback* interface = nullptr;
     QPdfDocument* document = nullptr;
     qreal pixelRatio = 1.0;
 
@@ -268,12 +268,12 @@ void PdfPageProvider::setDocument(QPdfDocument* document) const
     d_ptr->linkModel.setDocument(document);
 }
 
-void PdfPageProvider::setInterface(Interface* interface) const
+void PdfPageProvider::setFeedback(Feedback* interface) const
 {
     d_ptr->interface = interface;
 }
 
-PdfPageProvider::Interface* PdfPageProvider::interface() const
+PdfPageProvider::Feedback* PdfPageProvider::feedback() const
 {
     return d_ptr->interface;
 }
@@ -310,7 +310,7 @@ QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
     return d_ptr->linkModel.linkAt(pos);
 }
 
-std::optional<QImage> PdfPageProvider::request(const Interface::RequesterID requester, const int page, const qreal scale) const
+std::optional<QImage> PdfPageProvider::request(const Feedback::RequesterID requester, const int page, const qreal scale) const
 {
     return d_ptr->request(requester, page, scale);
 }

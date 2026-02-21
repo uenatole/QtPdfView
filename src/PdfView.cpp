@@ -21,13 +21,11 @@ void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
     QGuiApplication::clipboard()->setText(text, mode);
 }
 
-PdfView::PdfView(QWidget* parent)
-    : QGraphicsView(parent)
-    , m_provider(new PdfPageProvider())
+namespace
 {
-    struct Interface : PdfPageProvider::Interface
+    struct ProviderFeedback : PdfPageProvider::Feedback
     {
-        explicit Interface(QGraphicsView* view) : _view(view){}
+        explicit ProviderFeedback(QGraphicsView* view) : _view(view){}
 
         [[nodiscard]] bool isActual(const RequesterID id) const override
         {
@@ -50,8 +48,13 @@ PdfView::PdfView(QWidget* parent)
     private:
         QGraphicsView* _view;
     };
+}
 
-    m_provider->setInterface(new Interface(this));
+PdfView::PdfView(QWidget* parent)
+    : QGraphicsView(parent)
+    , m_provider(new PdfPageProvider())
+{
+    m_provider->setFeedback(new ProviderFeedback(this));
     // TODO: keep track QWindow::screenChanged
     m_provider->setPixelRatio(devicePixelRatio());
 }
