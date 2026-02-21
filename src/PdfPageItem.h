@@ -20,8 +20,11 @@ public:
 
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
+    void tryLinkHover(QPointF pos);
+
     struct Private;
     std::unique_ptr<Private> d_ptr;
 };
