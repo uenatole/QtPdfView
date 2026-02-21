@@ -51,25 +51,36 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 
     const qreal scale = painter->worldTransform().m11();
 
+    // TODO: draw as underlay after other operations to exclude possible composition interference (~~~)
     painter->fillRect(boundingRect(), Qt::white);
 
     if (const auto image = d_ptr->provider->request(reinterpret_cast<PdfPageProvider::Feedback::RequesterID>(this), d_ptr->number, scale); image)
         painter->drawImage(boundingRect(), *image);
 
+    painter->save();
+    painter->setCompositionMode(QPainter::CompositionMode_Multiply);
+
     if (const QRectF rect = d_ptr->selectionRect; !rect.isNull())
     {
-        // TODO: add selection styling
+        // TODO: make text selection style configurable
 
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(206, 235, 249, 200));
+
+        // NOTE: right now QPolygonF is guaranteed to be QRectF, so draw it boundaries to easily add margins
         for (const QPdfSelection selection = GetSelection(); const QPolygonF& polygon : selection.bounds())
-            painter->drawPolygon(polygon);
+            painter->drawRect(polygon.boundingRect().adjusted(-0, -2, +0, +2));
     }
 
     if (d_ptr->currentLink.isValid())
     {
-        // TODO: add link highlight styling
+        // TODO: make link highlighting style configurable
+
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(255, 255, 204, 160));
 
         for (const QRectF rect : d_ptr->currentLink.rectangles())
-            painter->drawRect(rect);
+            painter->drawRect(rect.adjusted(-0, -2, +0, +2));
 
         setCursor(Qt::PointingHandCursor);
     }
@@ -77,6 +88,8 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     {
         unsetCursor();
     }
+
+    painter->restore();
 }
 
 void PdfPageItem::SetSelectionRect(const QRectF& rect)
