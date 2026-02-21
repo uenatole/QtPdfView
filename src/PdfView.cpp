@@ -1,5 +1,6 @@
 #include "PdfView.h"
 
+#include <QDesktopServices>
 #include <QPdfDocument>
 #include <QGraphicsScene>
 #include <QGraphicsEffect>
@@ -137,6 +138,11 @@ PdfViewSelection PdfView::getSelection() const
 
 void PdfView::processLink(const QPdfLink& link)
 {
+    if (const auto url = link.url(); url.isValid())
+        QDesktopServices::openUrl(url);
+
+    // TODO: process other link types
+
     qDebug() << link.toString();
 }
 
