@@ -12,11 +12,11 @@ class QPdfDocument;
 class PdfPageProvider
 {
 public:
-    struct Interface
+    struct Feedback
     {
         using RequesterID = std::size_t;
 
-        virtual ~Interface() = default;
+        virtual ~Feedback() = default;
         [[nodiscard]] virtual bool isActual(RequesterID id) const = 0;
         virtual bool notify(RequesterID id) = 0;
     };
@@ -26,8 +26,8 @@ public:
 
     void setDocument(QPdfDocument* document) const;
 
-    void setInterface(Interface* interface) const;
-    Interface* interface() const;
+    void setFeedback(Feedback* interface) const;
+    Feedback* feedback() const;
 
     void setPixelRatio(qreal ratio) const;
     void setCacheLimit(qreal bytes) const;
@@ -38,7 +38,7 @@ public:
 
     QPdfLink getLinkAt(int page, QPointF pos) const;
 
-    std::optional<QImage> request(Interface::RequesterID requester, int page, qreal scale) const;
+    std::optional<QImage> request(Feedback::RequesterID requester, int page, qreal scale) const;
 
 private:
     struct Private;
