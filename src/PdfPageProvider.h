@@ -7,27 +7,20 @@
 #include <QPdfSelection> // TODO: hide under another abstraction
 #include <QPdfLink>
 
+#include "iface/DocumentImageSource.h"
+
 class QPdfDocument;
 
-class PdfPageProvider
+class PdfPageProvider : public DocumentImageSource
 {
 public:
-    struct Feedback
-    {
-        using RequesterID = std::size_t;
-
-        virtual ~Feedback() = default;
-        [[nodiscard]] virtual bool isActual(RequesterID id) const = 0;
-        virtual bool notify(RequesterID id) = 0;
-    };
-
     PdfPageProvider();
-    ~PdfPageProvider();
+    ~PdfPageProvider() override;
 
     void setDocument(QPdfDocument* document) const;
 
     void setFeedback(Feedback* interface) const;
-    Feedback* feedback() const;
+    [[nodiscard]] Feedback* feedback() const;
 
     void setPixelRatio(qreal ratio) const;
     void setCacheLimit(qreal bytes) const;
@@ -38,7 +31,7 @@ public:
 
     QPdfLink getLinkAt(int page, QPointF pos) const;
 
-    std::optional<QImage> request(Feedback::RequesterID requester, int page, qreal scale) const;
+    std::optional<QImage> requestImage(int page, qreal scale) final;
 
 private:
     struct Private;

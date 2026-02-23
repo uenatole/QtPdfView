@@ -75,7 +75,6 @@ namespace
     {
         int Page;
         qreal Scale;
-        PdfPageProvider::Feedback::RequesterID Requester;
 
         bool operator==(const RenderRequest& other) const
         {
@@ -111,7 +110,7 @@ struct PdfPageProvider::Private
         QObject::connect(&dequeueDelayTimer, &QTimer::timeout, [this]{ tryDequeueRenderRequest(); });
     }
 
-    std::optional<QImage> request(const Feedback::RequesterID requester, const int page, const qreal scale)
+    std::optional<QImage> request(const int page, const qreal scale)
     {
         if (const QImage* image = cache.object(page, scale); image)
         {
@@ -119,7 +118,7 @@ struct PdfPageProvider::Private
             return *image;
         }
 
-        const RenderRequest parameters { page, scale, requester };
+        const RenderRequest parameters { page, scale };
         const std::optional<QImage> nearestImage = findNearestImage(page, scale);
 
         // Check active render request for duplication
@@ -177,7 +176,7 @@ private:
 
     void tryDequeueRenderRequest()
     {
-        if (renderState && !interface->isActual(renderState->Request.Requester))
+        if (renderState && !interface->isActual(renderState->Request.Page))
         {
             renderState.reset();
         }
@@ -185,7 +184,7 @@ private:
         // Erase unactual requests
         const auto firstActualIt = std::find_if(requests.begin(), requests.end(), [this](const RenderRequest& request)
         {
-            return interface->isActual(request.Requester);
+            return interface->isActual(request.Page);
         });
 
         const auto prevSize = requests.size();
@@ -231,7 +230,7 @@ private:
         )
         .then(QThread::currentThread(), [this, request](const QImage& image){
             (void) cache.insert(request.Page, request.Scale, new QImage(image));
-            interface->notify(request.Requester);
+            interface->imageReady(request.Page);
 
             renderState.reset();
             tryDequeueRenderRequest();
@@ -310,7 +309,7 @@ QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
     return d_ptr->linkModel.linkAt(pos);
 }
 
-std::optional<QImage> PdfPageProvider::request(const Feedback::RequesterID requester, const int page, const qreal scale) const
+std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal scale)
 {
-    return d_ptr->request(requester, page, scale);
+    return d_ptr->request(page, scale);
 }

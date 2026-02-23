@@ -48,9 +48,13 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
+    friend struct ImageSourceFeedback;
+    QGraphicsItem* getPageItem(int page) const;
+
     bool m_wheelZoomingDisabled = true;
     std::unique_ptr<PdfPageProvider> m_provider;
     std::unique_ptr<PdfPageItem::Feedback> m_feedback;
 
     std::optional<QPointF> m_selectionStart;
+    QHash<int, QGraphicsItem*> m_pageItems;
 };
