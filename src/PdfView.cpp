@@ -122,15 +122,14 @@ bool PdfView::wheelZooming() const
     return m_wheelZoomingDisabled;
 }
 
-PdfViewSelection PdfView::getSelection() const
+QString PdfView::getSelectedText() const
 {
-    QList<QPdfSelection> selections;
+    QString text;
 
-    for (const auto item : items())
-        if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
-            selections.push_back(page->GetSelection());
+    for (const QGraphicsItem* page : m_pageItems.asKeyValueRange() | std::views::values)
+        text += dynamic_cast<const PdfPageItem*>(page)->GetSelectedText();
 
-    return PdfViewSelection { selections };
+    return text;
 }
 
 void PdfView::processLink(const QPdfLink& link)

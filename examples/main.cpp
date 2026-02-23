@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     const QShortcut copyShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), &view);
     QObject::connect(&copyShortcut, &QShortcut::activated, [&]
     {
-       view.getSelection().copyToClipboard();
+        QGuiApplication::clipboard()->setText(view.getSelectedText(), QClipboard::Clipboard);
     });
 
     view.setDocument(&document);

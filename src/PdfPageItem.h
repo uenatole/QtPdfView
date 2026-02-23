@@ -23,7 +23,7 @@ public:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
     void SetSelectionRect(const QRectF& rect);
-    QPdfSelection GetSelection() const;
+    QString GetSelectedText() const;
 
     int Number() const;
 
