@@ -311,10 +311,10 @@ std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal 
 
 QList<QPolygonF> PdfPageProvider::getGeometryAt(int page, QPointF start, QPointF end)
 {
-    return d_ptr->document->getSelection(page, start, end).bounds();
+    return d_ptr->document->getTextGeometry(page, start, end);
 }
 
 QString PdfPageProvider::getTextAt(int page, QPointF start, QPointF end)
 {
-    return d_ptr->document->getSelection(page, start, end).text();
+    return d_ptr->document->getTextContents(page, start, end);
 }
