@@ -68,7 +68,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
         painter->setBrush(QColor(206, 235, 249, 200));
 
         // NOTE: right now QPolygonF is guaranteed to be QRectF, so draw it boundaries to easily add margins
-        for (const QPdfSelection selection = GetSelection(); const QPolygonF& polygon : selection.bounds())
+        for (const QList<QPolygonF> polygons = d_ptr->provider->getGeometryAt(d_ptr->number, d_ptr->selectionRect.topLeft(), d_ptr->selectionRect.bottomRight()); const QPolygonF& polygon : polygons)
             painter->drawRect(polygon.boundingRect().adjusted(-0, -2, +0, +2));
     }
 
@@ -98,10 +98,10 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
     update();
 }
 
-QPdfSelection PdfPageItem::GetSelection() const
+QString PdfPageItem::GetSelectedText() const
 {
     const auto rect = d_ptr->selectionRect;
-    return d_ptr->provider->getSelection(d_ptr->number, rect.topLeft(), rect.bottomRight());
+    return d_ptr->provider->getTextAt(d_ptr->number, rect.topLeft(), rect.bottomRight());
 }
 
 int PdfPageItem::Number() const

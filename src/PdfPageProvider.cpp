@@ -298,11 +298,6 @@ QSizeF PdfPageProvider::pagePointSize(int page) const
     return d_ptr->document->pagePointSize(page);
 }
 
-QPdfSelection PdfPageProvider::getSelection(const int page, QPointF start, QPointF end) const
-{
-    return d_ptr->document->getSelection(page, start, end);
-}
-
 QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
 {
     d_ptr->linkModel.setPage(page);
@@ -312,4 +307,14 @@ QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
 std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal scale)
 {
     return d_ptr->request(page, scale);
+}
+
+QList<QPolygonF> PdfPageProvider::getGeometryAt(int page, QPointF start, QPointF end)
+{
+    return d_ptr->document->getSelection(page, start, end).bounds();
+}
+
+QString PdfPageProvider::getTextAt(int page, QPointF start, QPointF end)
+{
+    return d_ptr->document->getSelection(page, start, end).text();
 }

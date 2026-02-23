@@ -35,7 +35,7 @@ public:
     void setWheelZooming(bool enabled = true);
     bool wheelZooming() const;
 
-    PdfViewSelection getSelection() const;
+    QString getSelectedText() const;
 
     // TODO: hide it
     void processLink(const QPdfLink& link);

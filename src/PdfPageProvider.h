@@ -8,10 +8,11 @@
 #include <QPdfLink>
 
 #include "iface/DocumentImageSource.h"
+#include "iface/DocumentTextSource.h"
 
 class QPdfDocument;
 
-class PdfPageProvider : public DocumentImageSource
+class PdfPageProvider : public DocumentImageSource, public DocumentTextSource
 {
 public:
     PdfPageProvider();
@@ -27,11 +28,12 @@ public:
     void setRenderDelay(int ms) const;
 
     QSizeF pagePointSize(int page) const;
-    QPdfSelection getSelection(int page, QPointF start = {}, QPointF end = {}) const;
-
     QPdfLink getLinkAt(int page, QPointF pos) const;
 
     std::optional<QImage> requestImage(int page, qreal scale) final;
+
+    QList<QPolygonF> getGeometryAt(int page, QPointF start, QPointF end) final;
+    QString getTextAt(int page, QPointF start, QPointF end) final;
 
 private:
     struct Private;
