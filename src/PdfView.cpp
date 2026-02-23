@@ -22,54 +22,50 @@ void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
     QGuiApplication::clipboard()->setText(text, mode);
 }
 
-namespace
+struct ImageSourceFeedback : PdfPageProvider::Feedback
 {
-    struct ProviderFeedback : PdfPageProvider::Feedback
+    explicit ImageSourceFeedback(PdfView* view) : _view(view){}
+
+    [[nodiscard]] bool isActual(const int page) override
     {
-        explicit ProviderFeedback(QGraphicsView* view) : _view(view){}
+        const auto item = _view->getPageItem(page);
 
-        [[nodiscard]] bool isActual(const RequesterID id) const override
-        {
-            const auto item = reinterpret_cast<QGraphicsItem*>(id);
+        const QRect portRect = _view->viewport()->rect();
+        const QRectF sceneRect = _view->mapToScene(portRect).boundingRect();
+        const QRectF itemRect = item->mapRectFromScene(sceneRect);
 
-            const QRect portRect = _view->viewport()->rect();
-            const QRectF sceneRect = _view->mapToScene(portRect).boundingRect();
-            const QRectF itemRect = item->mapRectFromScene(sceneRect);
+        return itemRect.intersects(item->boundingRect());
+    }
 
-            return itemRect.intersects(item->boundingRect());
-        }
-
-        bool notify(const RequesterID id) override
-        {
-            const auto item = reinterpret_cast<QGraphicsItem*>(id);
-            item->update();
-            return true;
-        }
-
-    private:
-        QGraphicsView* _view;
-    };
-
-    struct PageItemFeedback : PdfPageItem::Feedback
+    void imageReady(const int page) override
     {
-        explicit PageItemFeedback(PdfView* view) : _view(view){}
+        const auto item = _view->getPageItem(page);
+        item->update();
+    }
 
-        void linkPressed(const QPdfLink& link) override
-        {
-            _view->processLink(link);
-        }
+private:
+    PdfView* _view;
+};
 
-    private:
-        PdfView* const _view;
-    };
-}
+struct PageItemFeedback : PdfPageItem::Feedback
+{
+    explicit PageItemFeedback(PdfView* view) : _view(view){}
+
+    void linkPressed(const QPdfLink& link) override
+    {
+        _view->processLink(link);
+    }
+
+private:
+    PdfView* const _view;
+};
 
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
     , m_provider(new PdfPageProvider())
     , m_feedback(new PageItemFeedback(this))
 {
-    m_provider->setFeedback(new ProviderFeedback(this));
+    m_provider->setFeedback(new ImageSourceFeedback(this));
     // TODO: keep track QWindow::screenChanged
     m_provider->setPixelRatio(devicePixelRatio());
 }
@@ -106,6 +102,7 @@ void PdfView::setDocument(QPdfDocument* document)
         // item->setGraphicsEffect(shadowEffect);
 
         scene->addItem(item);
+        m_pageItems.insert(page, item);
     }
 
     setScene(scene);
@@ -256,6 +253,11 @@ void PdfView::mouseMoveEvent(QMouseEvent* event)
     }
 
     QGraphicsView::mouseMoveEvent(event);
+}
+
+QGraphicsItem* PdfView::getPageItem(const int page) const
+{
+    return m_pageItems[page];
 }
 
 

@@ -54,7 +54,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     // TODO: draw as underlay after other operations to exclude possible composition interference (~~~)
     painter->fillRect(boundingRect(), Qt::white);
 
-    if (const auto image = d_ptr->provider->request(reinterpret_cast<PdfPageProvider::Feedback::RequesterID>(this), d_ptr->number, scale); image)
+    if (const auto image = d_ptr->provider->requestImage(d_ptr->number, scale); image)
         painter->drawImage(boundingRect(), *image);
 
     painter->save();

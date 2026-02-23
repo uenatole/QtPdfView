@@ -18,7 +18,8 @@ add_library(QtPdfView
         src/PdfPageItem.cpp
         src/PdfPageItem.h
         src/PdfPageProvider.cpp
-        src/PdfPageProvider.h)
+        src/PdfPageProvider.h
+        src/iface/DocumentImageSource.h)
 
 target_link_libraries(QtPdfView PUBLIC Qt::Pdf Qt::Widgets)
 target_include_directories(QtPdfView PUBLIC src)
