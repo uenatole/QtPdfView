@@ -24,8 +24,10 @@ public:
     [[nodiscard]] Feedback* feedback() const;
 
     void setPixelRatio(qreal ratio) const;
-    void setCacheLimit(qreal bytes) const;
+    void setRenderCacheLimit(qreal bytes) const;
     void setRenderDelay(int ms) const;
+
+    void setLayoutCacheLimit(qreal bytes) const;
 
     QSizeF pagePointSize(int page) const;
     QPdfLink getLinkAt(int page, QPointF pos) const;
