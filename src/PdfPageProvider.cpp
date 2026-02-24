@@ -216,7 +216,7 @@ struct PdfPageProvider::Private
         return nearestImage;
     }
 
-    QList<QPolygonF> getGeometry(const int page, const QPointF start, const QPointF end) const
+    QList<QRectF> getGeometry(const int page, const QPointF start, const QPointF end) const
     {
         const PageLayout& layout = getPageLayout(page);
         const auto [firstLineIt, lastLineIt] = layout.findLines(start, end);
@@ -224,7 +224,7 @@ struct PdfPageProvider::Private
         if (firstLineIt == layout.Lines.end())
             return {};
 
-        QList<QPolygonF> geometry;
+        QList<QRectF> geometry;
 
         const auto startIndex = firstLineIt->getCharIndexAt(start.x());
         const auto endIndex = lastLineIt->getCharIndexAt(end.x()) + 1;
@@ -524,7 +524,7 @@ std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal 
     return d_ptr->request(page, scale);
 }
 
-QList<QPolygonF> PdfPageProvider::getGeometryAt(int page, QPointF start, QPointF end)
+QList<QRectF> PdfPageProvider::getGeometryAt(int page, QPointF start, QPointF end)
 {
     return d_ptr->getGeometry(page, start, end);
 }

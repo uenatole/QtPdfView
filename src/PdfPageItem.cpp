@@ -69,9 +69,8 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(206, 235, 249, 200));
 
-        // NOTE: right now QPolygonF is guaranteed to be QRectF, so draw it boundaries to easily add margins
-        for (const QList<QPolygonF> polygons = d_ptr->provider->getGeometryAt(d_ptr->number, d_ptr->selectionRect.topLeft(), d_ptr->selectionRect.bottomRight()); const QPolygonF& polygon : polygons)
-            painter->drawRect(polygon.boundingRect().adjusted(-0, -2, +0, +2));
+        for (const QList<QRectF> geometries = d_ptr->provider->getGeometryAt(d_ptr->number, d_ptr->selectionRect); const QRectF& geometry : geometries)
+            painter->drawRect(geometry.adjusted(-0, -2, +0, +2));
     }
 
     if (d_ptr->currentLink.isValid())

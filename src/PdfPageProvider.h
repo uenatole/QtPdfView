@@ -34,7 +34,7 @@ public:
 
     std::optional<QImage> requestImage(int page, qreal scale) final;
 
-    QList<QPolygonF> getGeometryAt(int page, QPointF start, QPointF end) final;
+    QList<QRectF> getGeometryAt(int page, QPointF start, QPointF end) final;
     QString getTextAt(int page, QPointF start, QPointF end) final;
     QPair<int, int> getIndicesAt(int page, QPointF start, QPointF end);
 
