@@ -1,5 +1,6 @@
 #include "PdfPageProvider.h"
 
+#include <QCache>
 #include <QElapsedTimer>
 #include <QGraphicsItem>
 #include <QPdfDocument>
@@ -97,6 +98,66 @@ namespace
             Future.cancelChain();
         }
     };
+
+    struct LineLayout
+    {
+        QPair<int, int> Indices; // [a; b)
+        QRectF Geometry;
+        QList<qreal> CharBeginnings;
+
+        QRectF getGeometryAtIndex(int begin, int end) const
+        {
+            if (begin >= Indices.second)
+                return {};
+
+            begin = std::max(Indices.first, begin);
+            end = std::min(Indices.second, end);
+
+            const qreal left = CharBeginnings[begin - Indices.first];
+            const qreal right
+                = end == Indices.second
+                ? Geometry.right()
+                : CharBeginnings[end - Indices.first];
+
+            QRectF subGeometry = Geometry;
+            subGeometry.setLeft(left);
+            subGeometry.setRight(right);
+
+            return subGeometry;
+        }
+
+        [[nodiscard]] int getCharIndexAt(qreal x) const
+        {
+            x = std::clamp(x, Geometry.left(), Geometry.right());
+
+            const auto it = std::upper_bound(CharBeginnings.begin(), CharBeginnings.end(), x);
+            const int offset = std::distance(CharBeginnings.begin(), it) - 1;
+
+            return Indices.first + offset;
+        }
+    };
+
+    struct PageLayout
+    {
+        QList<LineLayout> Lines;
+        QList<QPdfLink> Links;
+
+        [[nodiscard]] QPair<QList<LineLayout>::const_iterator, QList<LineLayout>::const_iterator> findLines(const QPointF begin, const QPointF end) const
+        {
+            const auto firstLineIt = std::lower_bound(Lines.begin(), Lines.end(), begin, [](const LineLayout& line, const QPointF& point) -> bool {
+                return line.Geometry.bottom() < point.y();
+            });
+
+            const auto lastLineIt = std::upper_bound(Lines.begin(), Lines.end(), end, [](const QPointF& point, const LineLayout& line) -> bool {
+                return line.Geometry.top() > point.y();
+            });
+
+            if (firstLineIt == lastLineIt)
+                return { Lines.end(), Lines.end() };
+
+            return {firstLineIt, lastLineIt - 1 };
+        }
+    };
 }
 
 struct PdfPageProvider::Private
@@ -112,7 +173,7 @@ struct PdfPageProvider::Private
 
     std::optional<QImage> request(const int page, const qreal scale)
     {
-        if (const QImage* image = cache.object(page, scale); image)
+        if (const QImage* image = renderCache.object(page, scale); image)
         {
             qDebug() << "Cache hit: page =" << page << "scale =" << scale;
             return *image;
@@ -155,10 +216,58 @@ struct PdfPageProvider::Private
         return nearestImage;
     }
 
+    QList<QPolygonF> getGeometry(const int page, const QPointF start, const QPointF end) const
+    {
+        const PageLayout& layout = getPageLayout(page);
+        const auto [firstLineIt, lastLineIt] = layout.findLines(start, end);
+
+        if (firstLineIt == layout.Lines.end())
+            return {};
+
+        QList<QPolygonF> geometry;
+
+        const auto startIndex = firstLineIt->getCharIndexAt(start.x());
+        const auto endIndex = lastLineIt->getCharIndexAt(end.x()) + 1;
+
+        const QRectF firstLineGeometry = firstLineIt->getGeometryAtIndex(startIndex, endIndex);
+        geometry.append(firstLineGeometry);
+
+        if (firstLineIt != lastLineIt)
+        {
+            for (auto lineIt = firstLineIt + 1; lineIt < lastLineIt; ++lineIt)
+                geometry.append(lineIt->Geometry);
+
+            const QRectF lastLineGeometry = lastLineIt->getGeometryAtIndex(startIndex, endIndex);
+            geometry.append(lastLineGeometry);
+        }
+
+        return geometry;
+    }
+
+    QString getText(const int page, const QPointF start, const QPointF end) const
+    {
+        const auto [regionStart, regionEnd] = getIndices(page, start, end);
+        return document->getTextContentsAtIndex(page, regionStart, regionEnd);
+    }
+
+    QPdfLink getLink(const int page, const QPointF pos) const
+    {
+        const auto& layout = getPageLayout(page);
+
+        for (const auto& link : layout.Links)
+        {
+            for (const auto& rect : link.rectangles())
+                if (rect.contains(pos))
+                    return link;
+        }
+
+        return {};
+    }
+
 private:
     std::optional<QImage> findNearestImage(const int page, const qreal scale) const
     {
-        if (auto* image = cache.nearestObject(page, scale); image)
+        if (auto* image = renderCache.nearestObject(page, scale); image)
             return *image;
 
         return std::nullopt;
@@ -229,7 +338,7 @@ private:
             }
         )
         .then(QThread::currentThread(), [this, request](const QImage& image){
-            (void) cache.insert(request.Page, request.Scale, new QImage(image));
+            (void) renderCache.insert(request.Page, request.Scale, new QImage(image));
             interface->imageReady(request.Page);
 
             renderState.reset();
@@ -239,24 +348,127 @@ private:
         renderState.emplace(request, future);
     }
 
+    const PageLayout& getPageLayout(const int page) const
+    {
+        PageLayout* layout = pageLayoutCache.object(page);
+
+        if (!layout)
+        {
+            layout = new PageLayout();
+
+            // Line forming method
+            {
+                QList<QRectF> charBoxes = document->getCharGeometryAtIndex(page);
+                QList<LineLayout> lines;
+
+                // TODO: change line detection method because right now it sometimes is wrong
+                const auto isOnLine = [](const QRectF& charRect, const QRectF& lineRect) -> bool
+                {
+                    return charRect.top() <= lineRect.bottom() && charRect.bottom() >= lineRect.top();
+                };
+
+                LineLayout currentLine = {};
+                int startIndex = 0;
+
+                for (int i = 0; i < charBoxes.size(); ++i)
+                {
+                    const auto& box = charBoxes[i];
+
+                    if (currentLine.CharBeginnings.isEmpty())
+                    {
+                        currentLine.Geometry = box;
+                        currentLine.CharBeginnings.append(box.left());
+                        startIndex = i;
+                    }
+                    else
+                    {
+                        if (isOnLine(currentLine.Geometry, box))
+                        {
+                            currentLine.Geometry |= box; // TODO: optimize calculations
+                            currentLine.CharBeginnings.append(box.left());
+                        }
+                        else
+                        {
+                            currentLine.Indices = qMakePair(startIndex, i);
+                            lines.append(currentLine);
+
+                            currentLine = {};
+
+                            currentLine.Geometry = box;
+                            currentLine.CharBeginnings.append(box.left());
+                            startIndex = i;
+                        }
+                    }
+                }
+
+                if (!currentLine.CharBeginnings.isEmpty())
+                {
+                    currentLine.Indices = qMakePair(startIndex, charBoxes.size());
+                    lines.append(currentLine);
+                }
+
+                layout->Lines = lines;
+            }
+
+            (void) pageLayoutCache.insert(page, layout); // TODO: make it work calculating layout size after creation
+
+            // TODO: get rid off QPdfLinkModel
+            {
+                QPdfLinkModel links;
+                links.setDocument(document);
+                links.setPage(page);
+
+                for (int i = 0; i < links.rowCount(QModelIndex()); ++i)
+                {
+                    QVariant variant = links.data(links.index(i), static_cast<int>(QPdfLinkModel::Role::Link));
+                    QPdfLink link = variant.value<QPdfLink>();
+                    layout->Links.append(link);
+                }
+            }
+
+            qDebug() << "Layout" << page;
+            for (const auto& line : layout->Lines)
+                qDebug() << "    " << line.Indices << line.Geometry << line.Geometry.top();
+        }
+
+        return *layout;
+    }
+
+    QPair<int, int> getIndices(const int page, const QPointF start, const QPointF end) const
+    {
+        const PageLayout& layout = getPageLayout(page);
+        const auto [firstLineIt, lastLineIt] = layout.findLines(start, end);
+
+        if (firstLineIt == layout.Lines.end())
+        {
+            return { -1, -1 };
+        }
+
+        const auto startIndex = firstLineIt->getCharIndexAt(start.x());
+        const auto endIndex = lastLineIt->getCharIndexAt(end.x()) + 1;
+
+        return { startIndex, endIndex };
+    }
+
     Feedback* interface = nullptr;
     QPdfDocument* document = nullptr;
     qreal pixelRatio = 1.0;
 
     QTimer dequeueDelayTimer;
 
-    mutable RenderCache cache;
+    mutable RenderCache renderCache;
 
     std::list<RenderRequest> requests;
     std::optional<RenderState> renderState;
 
-    QPdfLinkModel linkModel;
+    mutable QCache<int, PageLayout> pageLayoutCache;
 };
 
 PdfPageProvider::PdfPageProvider()
     : d_ptr(new Private)
 {
-    setCacheLimit(512 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
+    setRenderCacheLimit(512 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
+    setLayoutCacheLimit(64 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
 }
 
 PdfPageProvider::~PdfPageProvider() = default;
@@ -264,7 +476,6 @@ PdfPageProvider::~PdfPageProvider() = default;
 void PdfPageProvider::setDocument(QPdfDocument* document) const
 {
     d_ptr->document = document;
-    d_ptr->linkModel.setDocument(document);
 }
 
 void PdfPageProvider::setFeedback(Feedback* interface) const
@@ -283,14 +494,19 @@ void PdfPageProvider::setPixelRatio(const qreal ratio) const
     d_ptr->pixelRatio = ratio;
 }
 
-void PdfPageProvider::setCacheLimit(const qreal bytes) const
+void PdfPageProvider::setRenderCacheLimit(const qreal bytes) const
 {
-    d_ptr->cache.setLimit(bytes);
+    d_ptr->renderCache.setLimit(bytes);
 }
 
 void PdfPageProvider::setRenderDelay(const int ms) const
 {
     d_ptr->dequeueDelayTimer.setInterval(ms);
+}
+
+void PdfPageProvider::setLayoutCacheLimit(qreal bytes) const
+{
+    d_ptr->pageLayoutCache.setMaxCost(bytes);
 }
 
 QSizeF PdfPageProvider::pagePointSize(int page) const
@@ -300,8 +516,7 @@ QSizeF PdfPageProvider::pagePointSize(int page) const
 
 QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
 {
-    d_ptr->linkModel.setPage(page);
-    return d_ptr->linkModel.linkAt(pos);
+    return d_ptr->getLink(page, pos);
 }
 
 std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal scale)
@@ -311,10 +526,15 @@ std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal 
 
 QList<QPolygonF> PdfPageProvider::getGeometryAt(int page, QPointF start, QPointF end)
 {
-    return d_ptr->document->getTextGeometry(page, start, end);
+    return d_ptr->getGeometry(page, start, end);
 }
 
 QString PdfPageProvider::getTextAt(int page, QPointF start, QPointF end)
 {
-    return d_ptr->document->getTextContents(page, start, end);
+    return d_ptr->getText(page, start, end);
+}
+
+QPair<int, int> PdfPageProvider::getIndicesAt(int page, QPointF start, QPointF end)
+{
+    return d_ptr->getIndices(page, start, end);
 }
