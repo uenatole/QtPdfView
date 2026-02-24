@@ -33,8 +33,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* mouseEvent) override;
 
 private:
-    void tryLinkHover(QPointF pos);
-    void tryLinkPress(QPointF pos);
+    void updateCurrentLink(const QPdfLink& link);
 
     struct Private;
     std::unique_ptr<Private> d_ptr;

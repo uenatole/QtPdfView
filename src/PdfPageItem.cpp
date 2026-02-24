@@ -126,26 +126,26 @@ int PdfPageItem::Number() const
 
 void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    tryLinkHover(event->pos());
+    updateCurrentLink(d_ptr->provider->getLinkAt(d_ptr->number, event->pos()));
     QGraphicsItem::hoverMoveEvent(event);
 }
 
 void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    d_ptr->currentLink = QPdfLink();
+    updateCurrentLink(QPdfLink());
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
 void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    tryLinkPress(event->pos());
+    if (const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, event->pos()); link.isValid())
+        d_ptr->feedback->linkPressed(link);
+
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
-void PdfPageItem::tryLinkHover(const QPointF pos)
+void PdfPageItem::updateCurrentLink(const QPdfLink& link)
 {
-    const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, pos);
-
     const auto equals = [](const QPdfLink& first, const QPdfLink& second) -> bool {
         return first.rectangles() == second.rectangles(); // TODO: take overlapping links into account
     };
@@ -157,10 +157,3 @@ void PdfPageItem::tryLinkHover(const QPointF pos)
     update();
 }
 
-void PdfPageItem::tryLinkPress(const QPointF pos)
-{
-    const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, pos);
-
-    if (link.isValid())
-        d_ptr->feedback->linkPressed(link);
-}
