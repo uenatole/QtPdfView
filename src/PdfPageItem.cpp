@@ -122,10 +122,10 @@ void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
-void PdfPageItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     tryLinkPress(event->pos());
-    QGraphicsItem::mousePressEvent(event);
+    QGraphicsItem::mouseReleaseEvent(event);
 }
 
 void PdfPageItem::tryLinkHover(const QPointF pos)

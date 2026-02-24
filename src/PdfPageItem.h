@@ -30,7 +30,7 @@ public:
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
-    void mousePressEvent(QGraphicsSceneMouseEvent* mouseEvent) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* mouseEvent) override;
 
 private:
     void tryLinkHover(QPointF pos);
