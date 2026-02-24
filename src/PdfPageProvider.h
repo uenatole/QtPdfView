@@ -36,6 +36,7 @@ public:
 
     QList<QPolygonF> getGeometryAt(int page, QPointF start, QPointF end) final;
     QString getTextAt(int page, QPointF start, QPointF end) final;
+    QPair<int, int> getIndicesAt(int page, QPointF start, QPointF end);
 
 private:
     struct Private;

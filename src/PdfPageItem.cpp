@@ -26,6 +26,7 @@ private:
     const int number;
     const QSizeF pointSize;
 
+    QPair<int, int> selectionIndices = { -1, -1 };
     QRectF selectionRect;
     QPdfLink currentLink;
 };
@@ -94,8 +95,22 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 
 void PdfPageItem::SetSelectionRect(const QRectF& rect)
 {
-    d_ptr->selectionRect = rect;
-    update();
+    if (rect != d_ptr->selectionRect)
+    {
+        // NOTE: it's optimized way to compare "selections"
+        // TODO: aggregate 'indices', 'geometry', 'text' into one interface instance "DocumentTextSelection"
+        const auto indices = rect.isNull()
+            ? QPair { -1, -1 }
+            : d_ptr->provider->getIndicesAt(d_ptr->number, rect.topLeft(), rect.bottomRight());
+
+        d_ptr->selectionRect = rect;
+
+        if (indices != d_ptr->selectionIndices)
+        {
+            d_ptr->selectionIndices = indices;
+            update();
+        }
+    }
 }
 
 QString PdfPageItem::GetSelectedText() const
@@ -118,7 +133,6 @@ void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
     d_ptr->currentLink = QPdfLink();
-    update();
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
