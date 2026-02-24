@@ -82,12 +82,6 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
 
         for (const QRectF rect : d_ptr->currentLink.rectangles())
             painter->drawRect(rect.adjusted(-0, -2, +0, +2));
-
-        setCursor(Qt::PointingHandCursor);
-    }
-    else
-    {
-        unsetCursor();
     }
 
     painter->restore();
@@ -127,12 +121,14 @@ int PdfPageItem::Number() const
 void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
     updateCurrentLink(d_ptr->provider->getLinkAt(d_ptr->number, event->pos()));
+    updateCursorShape(event->pos());
     QGraphicsItem::hoverMoveEvent(event);
 }
 
 void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
     updateCurrentLink(QPdfLink());
+    updateCursorShape();
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
@@ -157,3 +153,22 @@ void PdfPageItem::updateCurrentLink(const QPdfLink& link)
     update();
 }
 
+void PdfPageItem::updateCursorShape(std::optional<QPointF> pos)
+{
+    if (!pos)
+    {
+        unsetCursor();
+    }
+    else if (d_ptr->currentLink.isValid())
+    {
+        setCursor(Qt::CursorShape::PointingHandCursor);
+    }
+    else if (const auto geom = d_ptr->provider->getGeometryAt(d_ptr->number, *pos, *pos); !geom.isEmpty())
+    {
+        setCursor(Qt::CursorShape::IBeamCursor);
+    }
+    else
+    {
+        unsetCursor();
+    }
+}

@@ -34,6 +34,7 @@ protected:
 
 private:
     void updateCurrentLink(const QPdfLink& link);
+    void updateCursorShape(std::optional<QPointF> pos = std::nullopt);
 
     struct Private;
     std::unique_ptr<Private> d_ptr;
