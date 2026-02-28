@@ -36,6 +36,7 @@ PdfPageItem::PdfPageItem(PdfPageProvider* provider, Feedback* feedback, const in
 {
     setCacheMode(NoCache);
     setAcceptHoverEvents(true);
+    setFlag(ItemIsSelectable, true);
     assert(number >= 0 && number < _provider->document()->pageCount());
 }
 
@@ -137,6 +138,7 @@ void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, event->pos()); link.isValid())
         d_ptr->feedback->linkPressed(link);
 
+    updateCursorShape(event->pos());
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
