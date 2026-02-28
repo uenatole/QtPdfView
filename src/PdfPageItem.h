@@ -30,6 +30,8 @@ public:
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* mouseEvent) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* mouseEvent) override;
 
 private:
