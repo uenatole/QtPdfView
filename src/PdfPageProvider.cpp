@@ -524,17 +524,17 @@ std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal 
     return d_ptr->request(page, scale);
 }
 
-QList<QRectF> PdfPageProvider::getGeometryAt(int page, QPointF start, QPointF end)
+QList<QRectF> PdfPageProvider::getGeometryAt(int page, QRectF region)
 {
-    return d_ptr->getGeometry(page, start, end);
+    return d_ptr->getGeometry(page, region.topLeft(), region.bottomRight());
 }
 
-QString PdfPageProvider::getTextAt(int page, QPointF start, QPointF end)
+QString PdfPageProvider::getTextAt(int page, QRectF region)
 {
-    return d_ptr->getText(page, start, end);
+    return d_ptr->getText(page, region.topLeft(), region.bottomRight());
 }
 
-QPair<int, int> PdfPageProvider::getIndicesAt(int page, QPointF start, QPointF end)
+QPair<int, int> PdfPageProvider::getIndicesAt(int page, QRectF region)
 {
-    return d_ptr->getIndices(page, start, end);
+    return d_ptr->getIndices(page, region.topLeft(), region.bottomRight());
 }

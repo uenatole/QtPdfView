@@ -95,7 +95,7 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
         // TODO: aggregate 'indices', 'geometry', 'text' into one interface instance "DocumentTextSelection"
         const auto indices = rect.isNull()
             ? QPair { -1, -1 }
-            : d_ptr->provider->getIndicesAt(d_ptr->number, rect.topLeft(), rect.bottomRight());
+            : d_ptr->provider->getIndicesAt(d_ptr->number, rect);
 
         d_ptr->selectionRect = rect;
 
@@ -109,8 +109,7 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
 
 QString PdfPageItem::GetSelectedText() const
 {
-    const auto rect = d_ptr->selectionRect;
-    return d_ptr->provider->getTextAt(d_ptr->number, rect.topLeft(), rect.bottomRight());
+    return d_ptr->provider->getTextAt(d_ptr->number, d_ptr->selectionRect);
 }
 
 int PdfPageItem::Number() const
@@ -171,7 +170,7 @@ void PdfPageItem::updateCursorShape(std::optional<QPointF> pos)
     {
         setCursor(Qt::CursorShape::PointingHandCursor);
     }
-    else if (const auto geom = d_ptr->provider->getGeometryAt(d_ptr->number, *pos, *pos); !geom.isEmpty())
+    else if (const auto geom = d_ptr->provider->getGeometryAt(d_ptr->number, { *pos, *pos }); !geom.isEmpty())
     {
         setCursor(Qt::CursorShape::IBeamCursor);
     }
