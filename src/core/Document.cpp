@@ -34,7 +34,7 @@ namespace
 
     struct DummyRenderer : DocumentRenderer
     {
-        auto requestPageRender(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> override { return std::nullopt; }
+        auto requestPageRender(int page, qreal scale, DocumentRenderFeedback* feedback) const -> std::optional<QImage> override { return std::nullopt; }
     };
 }
 
@@ -55,7 +55,7 @@ auto Document::setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) ->
     m_renderer = renderer;
 }
 
-auto Document::setImageSourceFeedback(DocumentRenderer::Feedback* feedback) -> void
+auto Document::setImageSourceFeedback(DocumentRenderFeedback* feedback) -> void
 {
     m_rendererFeedback = feedback;
 }
