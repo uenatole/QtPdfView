@@ -2,7 +2,7 @@
 #include <QPdfDocument>
 #include <QShortcut>
 
-#include "PdfView.h"
+#include "../src/ui/DocumentView.h"
 #include "core/Document.h"
 #include "backend/pdf/PdfDocumentParser.h"
 #include "backend/pdf/PdfDocumentRenderer.h"
@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     document->setRenderer(renderer);
     document->setParser(parser);
 
-    PdfView view;
+    DocumentView view;
 
     const QShortcut copyShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), &view);
     QObject::connect(&copyShortcut, &QShortcut::activated, [&]

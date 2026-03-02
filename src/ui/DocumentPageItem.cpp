@@ -1,16 +1,15 @@
-#include "PdfPageItem.h"
+#include "DocumentPageItem.h"
 
 #include <QPainter>
-#include <QPdfDocument>
 #include <QGraphicsSceneHoverEvent>
 #include <QCursor>
 
 #include "core/Document.h"
 #include "core/DocumentParser.h"
 
-struct PdfPageItem::Private
+struct DocumentPageItem::Private
 {
-    friend class PdfPageItem;
+    friend class DocumentPageItem;
 
     Private(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
         : document(document)
@@ -32,7 +31,7 @@ private:
     QPdfLink currentLink;
 };
 
-PdfPageItem::PdfPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
+DocumentPageItem::DocumentPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
     : d_ptr(new Private(document, feedback, number))
 {
     setCacheMode(NoCache);
@@ -41,14 +40,14 @@ PdfPageItem::PdfPageItem(const std::shared_ptr<Document>& document, Feedback* fe
     assert(number >= 0 && number < _provider->document()->pageCount());
 }
 
-PdfPageItem::~PdfPageItem() = default;
+DocumentPageItem::~DocumentPageItem() = default;
 
-QRectF PdfPageItem::boundingRect() const
+QRectF DocumentPageItem::boundingRect() const
 {
     return QRectF(QPointF(0, 0), d_ptr->pointSize);
 }
 
-void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void DocumentPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     Q_UNUSED(option);
 
@@ -88,7 +87,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     painter->restore();
 }
 
-void PdfPageItem::SetSelectionRect(const QRectF& rect)
+void DocumentPageItem::SetSelectionRect(const QRectF& rect)
 {
     if (rect != d_ptr->selectionRect)
     {
@@ -104,38 +103,38 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
     }
 }
 
-QString PdfPageItem::GetSelectedText() const
+QString DocumentPageItem::GetSelectedText() const
 {
     return d_ptr->textRegion->text();
 }
 
-int PdfPageItem::Number() const
+int DocumentPageItem::Number() const
 {
     return d_ptr->number;
 }
 
-void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+void DocumentPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
     updateCurrentLink(d_ptr->document->link(d_ptr->number, event->pos()));
     updateCursorShape(event->pos());
     QGraphicsItem::hoverMoveEvent(event);
 }
 
-void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+void DocumentPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
     updateCurrentLink(QPdfLink());
     updateCursorShape();
     QGraphicsItem::hoverLeaveEvent(event);
 }
 
-void PdfPageItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+void DocumentPageItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     updateCurrentLink(d_ptr->document->link(d_ptr->number, event->pos()));
     updateCursorShape(event->pos());
     QGraphicsItem::mouseMoveEvent(event);
 }
 
-void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+void DocumentPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     if (const QPdfLink link = d_ptr->document->link(d_ptr->number, event->pos()); link.isValid())
         d_ptr->feedback->linkPressed(link);
@@ -144,7 +143,7 @@ void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
-void PdfPageItem::updateCurrentLink(const QPdfLink& link)
+void DocumentPageItem::updateCurrentLink(const QPdfLink& link)
 {
     const auto equals = [](const QPdfLink& first, const QPdfLink& second) -> bool {
         return first.rectangles() == second.rectangles(); // TODO: take overlapping links into account
@@ -157,7 +156,7 @@ void PdfPageItem::updateCurrentLink(const QPdfLink& link)
     update();
 }
 
-void PdfPageItem::updateCursorShape(std::optional<QPointF> pos)
+void DocumentPageItem::updateCursorShape(std::optional<QPointF> pos)
 {
     if (!pos)
     {
