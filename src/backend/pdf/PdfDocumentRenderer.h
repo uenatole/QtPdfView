@@ -1,10 +1,10 @@
 #pragma once
 
-#include "core/DocumentImageSource.h"
+#include "core/DocumentRenderer.h"
 
 class QPdfDocument;
 
-class PdfDocumentRenderer : public DocumentImageSource
+class PdfDocumentRenderer : public DocumentRenderer
 {
 public:
     explicit PdfDocumentRenderer(const std::shared_ptr<QPdfDocument>& document);
@@ -14,7 +14,7 @@ public:
     auto setRenderCacheLimit(qreal bytes) const -> void;
     auto setRenderDelay(int ms) const -> void;
 
-    auto requestImage(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> final;
+    auto requestPageRender(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> final;
 
 private:
     struct Private;

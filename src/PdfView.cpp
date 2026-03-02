@@ -8,7 +8,6 @@
 
 #include "PdfPageItem.h"
 #include "core/Document.h"
-#include "core/DocumentImageSource.h"
 
 PdfViewSelection::PdfViewSelection(const QList<QPdfSelection>& selections)
     : m_selections(selections)
@@ -23,7 +22,7 @@ void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
     QGuiApplication::clipboard()->setText(text, mode);
 }
 
-struct ImageSourceFeedback : DocumentImageSource::Feedback
+struct ImageSourceFeedback : DocumentRenderer::Feedback
 {
     explicit ImageSourceFeedback(PdfView* view) : _view(view){}
 

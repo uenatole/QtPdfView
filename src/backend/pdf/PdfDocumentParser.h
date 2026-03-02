@@ -1,12 +1,11 @@
 #pragma once
 
-#include "core/DocumentLinkSource.h"
-#include "core/DocumentTextSource.h"
-#include "core/DocumentMetaSource.h"
+#include "core/DocumentParser.h"
 
+class QPdfLink;
 class QPdfDocument;
 
-class PdfDocumentParser : public DocumentTextSource, public DocumentLinkSource, public DocumentMetaSource
+class PdfDocumentParser : public DocumentParser
 {
 public:
     explicit PdfDocumentParser(const std::shared_ptr<QPdfDocument>& document);
