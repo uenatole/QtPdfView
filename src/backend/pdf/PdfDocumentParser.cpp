@@ -66,6 +66,22 @@ namespace
 
             return {firstLineIt, lastLineIt - 1 };
         }
+
+
+        [[nodiscard]] QList<LineLayout>::const_iterator findLineAt(const QPointF point) const
+        {
+            const auto lineIt = std::lower_bound(Lines.begin(), Lines.end(), point, [](const LineLayout& line, const QPointF& p) -> bool {
+                return line.Geometry.bottom() < p.y();
+            });
+
+            if (lineIt == Lines.end() || point.y() < lineIt->Geometry.top())
+                return Lines.end();
+
+            if (lineIt->Geometry.left() <= point.x() && point.x() <= lineIt->Geometry.right())
+                return lineIt;
+
+            return Lines.end();
+        }
     };
 }
 
@@ -273,7 +289,8 @@ auto PdfDocumentParser::pagePointSize(int page) const -> QSizeF
 auto PdfDocumentParser::textHit(int page, QPointF point, uint8_t lod) const -> bool
 {
     (void) lod; // TODO: hit test for different LoD
-    return d->getIndices(page, point, point).first.first != -1;
+    const auto layout = d->getPageLayout(page);
+    return layout.findLineAt(point) != layout.Lines.end();
 }
 
 auto PdfDocumentParser::textRegion() const -> std::unique_ptr<DocumentTextRegion>
