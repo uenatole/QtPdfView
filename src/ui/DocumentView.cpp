@@ -49,9 +49,30 @@ struct PageItemFeedback : DocumentPageItem::Feedback
 {
     explicit PageItemFeedback(DocumentView* view) : _view(view){}
 
-    void linkPressed(const QPdfLink& link) override
+    void linkPressed(const DocumentLink& link) override
     {
-        _view->processLink(link);
+        if (const auto contents = std::get_if<DocumentLink::Url>(&link.contents()); contents)
+        {
+            QDesktopServices::openUrl(contents->url());
+        }
+
+        if (const auto contents = std::get_if<DocumentLink::Jump>(&link.contents()); contents)
+        {
+            const auto number = contents->destinationPage();
+            const auto location = contents->destinationLocation();
+            const auto zoom = contents->destinationZoom();
+
+            QTransform t = _view->transform();
+            t.setMatrix(
+                zoom, t.m12(), t.m13(),
+                t.m21(), zoom, t.m23(),
+                t.m31(), t.m32(), t.m33()
+            );
+
+            const auto page = dynamic_cast<DocumentPageItem*>(_view->getPageItem(number));
+            _view->setTransform(t);
+            page->ensureVisible({ location, location });
+        }
     }
 
 private:
@@ -124,31 +145,6 @@ QString DocumentView::getSelectedText() const
         text += dynamic_cast<const DocumentPageItem*>(page)->GetSelectedText();
 
     return text;
-}
-
-void DocumentView::processLink(const QPdfLink& link)
-{
-    if (const auto url = link.url(); url.isValid())
-        QDesktopServices::openUrl(url);
-    else
-    {
-        const auto number = link.page();
-        const auto location = link.location();
-        const auto zoom = link.zoom();
-
-        QTransform t = transform();
-        t.setMatrix(
-            zoom, t.m12(), t.m13(),
-            t.m21(), zoom, t.m23(),
-            t.m31(), t.m32(), t.m33()
-        );
-
-        const auto page = dynamic_cast<DocumentPageItem*>(m_pageItems[number]);
-        setTransform(t);
-        page->ensureVisible({ location, location });
-    }
-
-    qDebug() << link.toString();
 }
 
 void DocumentView::wheelEvent(QWheelEvent* event)

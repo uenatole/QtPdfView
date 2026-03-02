@@ -2,7 +2,6 @@
 
 #include "core/DocumentParser.h"
 
-class QPdfLink;
 class QPdfDocument;
 
 class PdfDocumentParser : public DocumentParser
@@ -20,7 +19,7 @@ public:
     auto textRegion() const -> std::unique_ptr<DocumentTextRegion> final;
 
     auto linkHit(int page, QPointF point) const -> bool final;
-    auto link(int page, QPointF point) const -> QPdfLink final;
+    auto link(int page, QPointF point) const -> std::optional<DocumentLink> final;
 
 private:
     struct Private;

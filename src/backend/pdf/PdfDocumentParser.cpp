@@ -49,7 +49,7 @@ namespace
     struct PageLayout
     {
         QList<LineLayout> Lines;
-        QList<QPdfLink> Links;
+        QList<DocumentLink> Links;
 
         [[nodiscard]] QPair<QList<LineLayout>::const_iterator, QList<LineLayout>::const_iterator> findLines(const QPointF begin, const QPointF end) const
         {
@@ -111,18 +111,18 @@ struct PdfDocumentParser::Private
         return document->getTextContentsAtIndex(page, startIndex, endIndex);
     }
 
-    QPdfLink getLink(const int page, const QPointF pos) const
+    std::optional<DocumentLink> getLink(const int page, const QPointF pos) const
     {
         const auto& layout = getPageLayout(page);
 
         for (const auto& link : layout.Links)
         {
-            for (const auto& rect : link.rectangles())
+            for (const auto& rect : link.geometry())
                 if (rect.contains(pos))
                     return link;
         }
 
-        return {};
+        return std::nullopt;
     }
 
 private:
@@ -200,13 +200,20 @@ private:
                 {
                     QVariant variant = links.data(links.index(i), static_cast<int>(QPdfLinkModel::Role::Link));
                     QPdfLink link = variant.value<QPdfLink>();
-                    layout->Links.append(link);
+
+                    if (link.url().isValid())
+                        layout->Links.append({ page, link.rectangles(), DocumentLink::Url(link.url())});
+                    else
+                        layout->Links.append({ page, link.rectangles(), DocumentLink::Jump(link.page(), link.zoom(), link.location() )});
                 }
             }
 
             qDebug() << "Layout" << page;
             for (const auto& line : layout->Lines)
                 qDebug() << "    " << line.Indices << line.Geometry << line.Geometry.top();
+
+            for (const auto& link : layout->Links)
+                qDebug().noquote() << "    " << link.toString();
         }
 
         return *layout;
@@ -317,10 +324,10 @@ auto PdfDocumentParser::textRegion() const -> std::unique_ptr<DocumentTextRegion
 auto PdfDocumentParser::linkHit(int page, QPointF point) const -> bool
 {
     // TODO: possible optimization
-    return d->getLink(page, point).isValid();
+    return d->getLink(page, point).has_value();
 }
 
-auto PdfDocumentParser::link(int page, QPointF point) const -> QPdfLink
+auto PdfDocumentParser::link(int page, QPointF point) const -> std::optional<DocumentLink>
 {
     return d->getLink(page, point);
 }

@@ -28,7 +28,7 @@ private:
     const QSizeF pointSize;
 
     QRectF selectionRect;
-    QPdfLink currentLink;
+    std::optional<DocumentLink> currentLink;
 };
 
 DocumentPageItem::DocumentPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
@@ -73,14 +73,14 @@ void DocumentPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
             painter->drawRect(geometry.adjusted(-0, -2, +0, +2));
     }
 
-    if (d_ptr->currentLink.isValid())
+    if (d_ptr->currentLink)
     {
         // TODO: make link highlighting style configurable
 
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(255, 255, 204, 160));
 
-        for (const QRectF rect : d_ptr->currentLink.rectangles())
+        for (const QRectF rect : d_ptr->currentLink->geometry())
             painter->drawRect(rect.adjusted(-0, -2, +0, +2));
     }
 
@@ -122,7 +122,7 @@ void DocumentPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 
 void DocumentPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    updateCurrentLink(QPdfLink());
+    updateCurrentLink(std::nullopt);
     updateCursorShape();
     QGraphicsItem::hoverLeaveEvent(event);
 }
@@ -136,17 +136,21 @@ void DocumentPageItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void DocumentPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (const QPdfLink link = d_ptr->document->link(d_ptr->number, event->pos()); link.isValid())
-        d_ptr->feedback->linkPressed(link);
+    if (const auto link = d_ptr->document->link(d_ptr->number, event->pos()); link)
+        d_ptr->feedback->linkPressed(*link);
 
     updateCursorShape(event->pos());
     QGraphicsItem::mouseReleaseEvent(event);
 }
 
-void DocumentPageItem::updateCurrentLink(const QPdfLink& link)
+void DocumentPageItem::updateCurrentLink(const std::optional<DocumentLink>& link)
 {
-    const auto equals = [](const QPdfLink& first, const QPdfLink& second) -> bool {
-        return first.rectangles() == second.rectangles(); // TODO: take overlapping links into account
+    const auto equals = [](const std::optional<DocumentLink>& first, const std::optional<DocumentLink>& second) -> bool
+    {
+        // TODO: optimize
+        const QList<QRectF> f = first.has_value() ? first->geometry() : QList<QRectF> {};
+        const QList<QRectF> s = second.has_value() ? second->geometry() : QList<QRectF> {};
+        return f == s;
     };
 
     if (equals(d_ptr->currentLink, link))
@@ -162,7 +166,7 @@ void DocumentPageItem::updateCursorShape(std::optional<QPointF> pos)
     {
         unsetCursor();
     }
-    else if (d_ptr->currentLink.isValid())
+    else if (d_ptr->currentLink)
     {
         setCursor(Qt::CursorShape::PointingHandCursor);
     }
