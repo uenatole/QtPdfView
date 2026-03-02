@@ -160,6 +160,9 @@ namespace
     };
 }
 
+using LineIndices = std::pair<int32_t, int32_t>;
+using CharIndices = std::pair<int32_t, int32_t>;
+
 struct PdfPageProvider::Private
 {
     friend class PdfPageProvider;
@@ -216,18 +219,19 @@ struct PdfPageProvider::Private
         return nearestImage;
     }
 
-    QList<QRectF> getGeometry(const int page, const QPointF start, const QPointF end) const
+    QList<QRectF> getGeometry(const int page, const LineIndices& iLine, const CharIndices& iChar) const
     {
-        const PageLayout& layout = getPageLayout(page);
-        const auto [firstLineIt, lastLineIt] = layout.findLines(start, end);
+        const auto& [Lines, _] = getPageLayout(page);
 
-        if (firstLineIt == layout.Lines.end())
+        if (iLine.first == -1)
             return {};
 
         QList<QRectF> geometry;
 
-        const auto startIndex = firstLineIt->getCharIndexAt(start.x());
-        const auto endIndex = lastLineIt->getCharIndexAt(end.x()) + 1;
+        const auto firstLineIt = Lines.begin() + iLine.first;
+        const auto lastLineIt = Lines.begin() + iLine.second;
+        const auto startIndex = iChar.first;
+        const auto endIndex = iChar.second;
 
         const QRectF firstLineGeometry = firstLineIt->getGeometryAtIndex(startIndex, endIndex);
         geometry.append(firstLineGeometry);
@@ -244,10 +248,11 @@ struct PdfPageProvider::Private
         return geometry;
     }
 
-    QString getText(const int page, const QPointF start, const QPointF end) const
+    QString getText(const int page, const CharIndices& iChar) const
     {
-        const auto [regionStart, regionEnd] = getIndices(page, start, end);
-        return document->getTextContentsAtIndex(page, regionStart, regionEnd);
+        const auto startIndex = iChar.first;
+        const auto endIndex = iChar.second;
+        return document->getTextContentsAtIndex(page, startIndex, endIndex);
     }
 
     QPdfLink getLink(const int page, const QPointF pos) const
@@ -434,20 +439,26 @@ private:
         return *layout;
     }
 
-    QPair<int, int> getIndices(const int page, const QPointF start, const QPointF end) const
+    std::pair<LineIndices, CharIndices> getIndices(const int page, const QPointF start, const QPointF end) const
     {
         const PageLayout& layout = getPageLayout(page);
         const auto [firstLineIt, lastLineIt] = layout.findLines(start, end);
 
         if (firstLineIt == layout.Lines.end())
         {
-            return { -1, -1 };
+            return {{ -1, -1 }, { -1, -1 }};
         }
 
-        const auto startIndex = firstLineIt->getCharIndexAt(start.x());
-        const auto endIndex = lastLineIt->getCharIndexAt(end.x()) + 1;
-
-        return { startIndex, endIndex };
+        return {
+            {
+                std::distance(layout.Lines.begin(), firstLineIt),
+                std::distance(layout.Lines.begin(), lastLineIt),
+            },
+            {
+                firstLineIt->getCharIndexAt(start.x()),
+                lastLineIt->getCharIndexAt(end.x()) + 1,
+            }
+        };
     }
 
     Feedback* interface = nullptr;
@@ -524,17 +535,53 @@ std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal 
     return d_ptr->request(page, scale);
 }
 
-QList<QRectF> PdfPageProvider::getGeometryAt(int page, QRectF region)
+bool PdfPageProvider::textHit(int page, QPointF point, uint8_t lod) const
 {
-    return d_ptr->getGeometry(page, region.topLeft(), region.bottomRight());
+    (void) lod; // TODO: hit test for different LoD
+    return d_ptr->getIndices(page, point, point).first.first != -1;
 }
 
-QString PdfPageProvider::getTextAt(int page, QRectF region)
+std::unique_ptr<DocumentTextRegion> PdfPageProvider::textRegion() const
 {
-    return d_ptr->getText(page, region.topLeft(), region.bottomRight());
-}
+    struct TextRegion : DocumentTextRegion
+    {
+        explicit TextRegion(Private* const d)
+            : d_ptr(d)
+        {}
 
-QPair<int, int> PdfPageProvider::getIndicesAt(int page, QRectF region)
-{
-    return d_ptr->getIndices(page, region.topLeft(), region.bottomRight());
+        auto configure(const int page, const QRectF region, const uint8_t lod) -> void final
+        {
+            (void) lod;
+            m_page = page;
+            std::tie(m_iLine, m_iChar) = d_ptr->getIndices(page, region.topLeft(), region.bottomRight());
+        }
+
+        auto lod() const -> uint8_t final
+        {
+            return 0; // TODO: different Level-of-details support
+        }
+
+        auto id() const -> uint64_t final
+        {
+            return static_cast<int64_t>(m_iChar.first) << 32 | m_iChar.second;
+        }
+
+        auto text() const -> QString final
+        {
+            return d_ptr->getText(m_page, m_iChar);
+        }
+
+        auto geometry() const -> QList<QRectF> final
+        {
+            return d_ptr->getGeometry(m_page, m_iLine, m_iChar);
+        }
+
+    private:
+        int m_page = -1;
+        std::pair<int32_t, int32_t> m_iLine;
+        std::pair<int32_t, int32_t> m_iChar;
+        Private* const d_ptr;
+    };
+
+    return std::make_unique<TextRegion>(d_ptr.get());
 }

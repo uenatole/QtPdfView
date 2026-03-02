@@ -30,13 +30,13 @@ public:
     void setLayoutCacheLimit(qreal bytes) const;
 
     QSizeF pagePointSize(int page) const;
+
     QPdfLink getLinkAt(int page, QPointF pos) const;
 
     std::optional<QImage> requestImage(int page, qreal scale) final;
 
-    QList<QRectF> getGeometryAt(int page, QRectF region) final;
-    QString getTextAt(int page, QRectF region) final;
-    QPair<int, int> getIndicesAt(int page, QRectF region);
+    bool textHit(int page, QPointF point, uint8_t lod = -1) const final;
+    std::unique_ptr<DocumentTextRegion> textRegion() const final;
 
 private:
     struct Private;
