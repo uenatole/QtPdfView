@@ -1,24 +1,11 @@
 #pragma once
 
-#include <QPdfSelection>
 #include <QGraphicsView>
 #include <QWidget>
 
 #include "DocumentPageItem.h"
 
-class QPdfSelection;
 class Document;
-
-// NOTE: right now depends on QPdfSelection and used for convenience
-// TODO: migrate from Qt::Pdf prior to own implementation
-struct PdfViewSelection
-{
-    explicit PdfViewSelection(const QList<QPdfSelection>& selections);
-    void copyToClipboard(QClipboard::Mode mode = QClipboard::Clipboard) const;
-
-private:
-    QList<QPdfSelection> m_selections;
-};
 
 // TODO: hide QGraphicsView
 class DocumentView : public QGraphicsView

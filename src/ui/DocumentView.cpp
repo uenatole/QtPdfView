@@ -7,19 +7,6 @@
 
 #include "core/Document.h"
 
-PdfViewSelection::PdfViewSelection(const QList<QPdfSelection>& selections)
-    : m_selections(selections)
-{}
-
-void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
-{
-    QString text;
-    for (const auto& selection : m_selections)
-        text += selection.text();
-
-    QGuiApplication::clipboard()->setText(text, mode);
-}
-
 struct ImageSourceFeedback : DocumentRenderer::Feedback
 {
     explicit ImageSourceFeedback(DocumentView* view) : _view(view){}
