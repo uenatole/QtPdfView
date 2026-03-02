@@ -1,12 +1,10 @@
-#include "PdfView.h"
+#include "DocumentView.h"
 
 #include <QDesktopServices>
-#include <QPdfDocument>
 #include <QGraphicsScene>
 #include <QGraphicsEffect>
 #include <QWheelEvent>
 
-#include "PdfPageItem.h"
 #include "core/Document.h"
 
 PdfViewSelection::PdfViewSelection(const QList<QPdfSelection>& selections)
@@ -24,7 +22,7 @@ void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
 
 struct ImageSourceFeedback : DocumentRenderer::Feedback
 {
-    explicit ImageSourceFeedback(PdfView* view) : _view(view){}
+    explicit ImageSourceFeedback(DocumentView* view) : _view(view){}
 
     [[nodiscard]] bool isActual(const int page) const final
     {
@@ -44,12 +42,12 @@ struct ImageSourceFeedback : DocumentRenderer::Feedback
     }
 
 private:
-    PdfView* _view;
+    DocumentView* _view;
 };
 
-struct PageItemFeedback : PdfPageItem::Feedback
+struct PageItemFeedback : DocumentPageItem::Feedback
 {
-    explicit PageItemFeedback(PdfView* view) : _view(view){}
+    explicit PageItemFeedback(DocumentView* view) : _view(view){}
 
     void linkPressed(const QPdfLink& link) override
     {
@@ -57,17 +55,17 @@ struct PageItemFeedback : PdfPageItem::Feedback
     }
 
 private:
-    PdfView* const _view;
+    DocumentView* const _view;
 };
 
-PdfView::PdfView(QWidget* parent)
+DocumentView::DocumentView(QWidget* parent)
     : QGraphicsView(parent)
     , m_feedback(new PageItemFeedback(this))
 {}
 
-PdfView::~PdfView(){}
+DocumentView::~DocumentView(){}
 
-void PdfView::setDocument(const std::shared_ptr<Document>& document)
+void DocumentView::setDocument(const std::shared_ptr<Document>& document)
 {
     m_document = document;
     m_document->setImageSourceFeedback(new ImageSourceFeedback(this));
@@ -84,7 +82,7 @@ void PdfView::setDocument(const std::shared_ptr<Document>& document)
     {
         QSizeF pagePointSize = document->pageSize(page);
 
-        const auto item = new PdfPageItem(document, m_feedback.get(), page);
+        const auto item = new DocumentPageItem(document, m_feedback.get(), page);
         item->setPos(documentMargins, yCursor);
 
         yCursor += pagePointSize.height() + documentMargins;
@@ -108,27 +106,27 @@ void PdfView::setDocument(const std::shared_ptr<Document>& document)
     setTransformationAnchor(AnchorUnderMouse);
 }
 
-void PdfView::setWheelZooming(bool enabled)
+void DocumentView::setWheelZooming(bool enabled)
 {
     m_wheelZoomingDisabled = !enabled;
 }
 
-bool PdfView::wheelZooming() const
+bool DocumentView::wheelZooming() const
 {
     return m_wheelZoomingDisabled;
 }
 
-QString PdfView::getSelectedText() const
+QString DocumentView::getSelectedText() const
 {
     QString text;
 
     for (const QGraphicsItem* page : m_pageItems.asKeyValueRange() | std::views::values)
-        text += dynamic_cast<const PdfPageItem*>(page)->GetSelectedText();
+        text += dynamic_cast<const DocumentPageItem*>(page)->GetSelectedText();
 
     return text;
 }
 
-void PdfView::processLink(const QPdfLink& link)
+void DocumentView::processLink(const QPdfLink& link)
 {
     if (const auto url = link.url(); url.isValid())
         QDesktopServices::openUrl(url);
@@ -145,7 +143,7 @@ void PdfView::processLink(const QPdfLink& link)
             t.m31(), t.m32(), t.m33()
         );
 
-        const auto page = dynamic_cast<PdfPageItem*>(m_pageItems[number]);
+        const auto page = dynamic_cast<DocumentPageItem*>(m_pageItems[number]);
         setTransform(t);
         page->ensureVisible({ location, location });
     }
@@ -153,7 +151,7 @@ void PdfView::processLink(const QPdfLink& link)
     qDebug() << link.toString();
 }
 
-void PdfView::wheelEvent(QWheelEvent* event)
+void DocumentView::wheelEvent(QWheelEvent* event)
 {
     if (m_wheelZoomingDisabled)
     {
@@ -196,12 +194,12 @@ void PdfView::wheelEvent(QWheelEvent* event)
     }
 }
 
-void PdfView::mousePressEvent(QMouseEvent* event)
+void DocumentView::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
     {
         for (const auto item : items())
-            if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
+            if (const auto page = dynamic_cast<DocumentPageItem*>(item); page)
                 page->SetSelectionRect({});
 
         m_selectionStart = mapToScene(event->pos());
@@ -210,14 +208,14 @@ void PdfView::mousePressEvent(QMouseEvent* event)
     QGraphicsView::mousePressEvent(event);
 }
 
-void PdfView::mouseReleaseEvent(QMouseEvent* event)
+void DocumentView::mouseReleaseEvent(QMouseEvent* event)
 {
     m_selectionStart.reset();
 
     QGraphicsView::mouseReleaseEvent(event);
 }
 
-void PdfView::mouseMoveEvent(QMouseEvent* event)
+void DocumentView::mouseMoveEvent(QMouseEvent* event)
 {
     // NOTE: this progressive selection method is quite inefficient due to selection from the very beginning on every update.
     // TODO: provide stateful selection API to make it truly progressive.
@@ -228,7 +226,7 @@ void PdfView::mouseMoveEvent(QMouseEvent* event)
         const auto selectionRect = QRectF(first, second);
 
         for (const auto item : items())
-            if (const auto page = dynamic_cast<PdfPageItem*>(item); page)
+            if (const auto page = dynamic_cast<DocumentPageItem*>(item); page)
             {
                 const QRectF sceneIntersectionRect = selectionRect.intersected(page->sceneBoundingRect());
 
@@ -243,7 +241,7 @@ void PdfView::mouseMoveEvent(QMouseEvent* event)
     QGraphicsView::mouseMoveEvent(event);
 }
 
-QGraphicsItem* PdfView::getPageItem(const int page) const
+QGraphicsItem* DocumentView::getPageItem(const int page) const
 {
     return m_pageItems[page];
 }

@@ -13,18 +13,21 @@ find_package(Qt6 COMPONENTS Widgets)
 
 add_library(QtPdfView
         src/custom/QCacheExt.h
-        src/PdfView.cpp
-        src/PdfView.h
-        src/PdfPageItem.cpp
-        src/PdfPageItem.h
+
         src/core/DocumentParser.h
         src/core/DocumentRenderer.h
         src/core/Document.cpp
         src/core/Document.h
+
         src/backend/pdf/PdfDocumentRenderer.cpp
         src/backend/pdf/PdfDocumentRenderer.h
         src/backend/pdf/PdfDocumentParser.cpp
         src/backend/pdf/PdfDocumentParser.h
+
+        src/ui/DocumentView.cpp
+        src/ui/DocumentView.h
+        src/ui/DocumentPageItem.cpp
+        src/ui/DocumentPageItem.h
 )
 
 target_link_libraries(QtPdfView PUBLIC Qt::Pdf Qt::Widgets)

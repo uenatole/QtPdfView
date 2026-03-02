@@ -4,7 +4,7 @@
 #include <QGraphicsView>
 #include <QWidget>
 
-#include "PdfPageItem.h"
+#include "DocumentPageItem.h"
 
 class QPdfSelection;
 class Document;
@@ -21,11 +21,11 @@ private:
 };
 
 // TODO: hide QGraphicsView
-class PdfView : public QGraphicsView
+class DocumentView : public QGraphicsView
 {
 public:
-    explicit PdfView(QWidget* parent = nullptr);
-    ~PdfView() override;
+    explicit DocumentView(QWidget* parent = nullptr);
+    ~DocumentView() override;
 
     void setDocument(const std::shared_ptr<Document>& document);
 
@@ -53,7 +53,7 @@ private:
 
     bool m_wheelZoomingDisabled = true;
     std::shared_ptr<Document> m_document;
-    std::unique_ptr<PdfPageItem::Feedback> m_feedback;
+    std::unique_ptr<DocumentPageItem::Feedback> m_feedback;
 
     std::optional<QPointF> m_selectionStart;
     QHash<int, QGraphicsItem*> m_pageItems;

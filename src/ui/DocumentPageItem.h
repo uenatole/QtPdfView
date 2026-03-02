@@ -5,7 +5,7 @@
 class Document;
 class QPdfLink;
 
-class PdfPageItem : public QGraphicsItem
+class DocumentPageItem : public QGraphicsItem
 {
 public:
     struct Feedback
@@ -14,8 +14,8 @@ public:
         virtual void linkPressed(const QPdfLink&) = 0;
     };
 
-    PdfPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, int number);
-    ~PdfPageItem() override;
+    DocumentPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, int number);
+    ~DocumentPageItem() override;
 
     QRectF boundingRect() const override;
 
