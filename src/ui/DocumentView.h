@@ -32,7 +32,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
-    friend struct ImageSourceFeedback;
+    friend struct RenderFeedback;
     friend struct PageItemFeedback;
 
     QGraphicsItem* getPageItem(int page) const;
