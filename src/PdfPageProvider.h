@@ -8,11 +8,12 @@
 #include <QPdfLink>
 
 #include "iface/DocumentImageSource.h"
+#include "iface/DocumentLinkSource.h"
 #include "iface/DocumentTextSource.h"
 
 class QPdfDocument;
 
-class PdfPageProvider : public DocumentImageSource, public DocumentTextSource
+class PdfPageProvider : public DocumentImageSource, public DocumentTextSource, public DocumentLinkSource
 {
 public:
     PdfPageProvider();
@@ -31,7 +32,8 @@ public:
 
     QSizeF pagePointSize(int page) const;
 
-    QPdfLink getLinkAt(int page, QPointF pos) const;
+    auto linkHit(int page, QPointF point) const -> bool override;
+    auto link(int page, QPointF point) const -> QPdfLink override;
 
     std::optional<QImage> requestImage(int page, qreal scale) final;
 

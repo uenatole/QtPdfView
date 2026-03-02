@@ -525,9 +525,15 @@ QSizeF PdfPageProvider::pagePointSize(int page) const
     return d_ptr->document->pagePointSize(page);
 }
 
-QPdfLink PdfPageProvider::getLinkAt(int page, QPointF pos) const
+auto PdfPageProvider::linkHit(int page, QPointF point) const -> bool
 {
-    return d_ptr->getLink(page, pos);
+    // TODO: possible optimization
+    return d_ptr->getLink(page, point).isValid();
+}
+
+auto PdfPageProvider::link(int page, QPointF point) const -> QPdfLink
+{
+    return d_ptr->getLink(page, point);
 }
 
 std::optional<QImage> PdfPageProvider::requestImage(const int page, const qreal scale)
