@@ -7,9 +7,9 @@
 #include <QPdfSelection> // TODO: hide under another abstraction
 #include <QPdfLink>
 
-#include "iface/DocumentImageSource.h"
-#include "iface/DocumentLinkSource.h"
-#include "iface/DocumentTextSource.h"
+#include "core/DocumentImageSource.h"
+#include "core/DocumentLinkSource.h"
+#include "core/DocumentTextSource.h"
 
 class QPdfDocument;
 
