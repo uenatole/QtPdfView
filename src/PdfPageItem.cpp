@@ -116,7 +116,7 @@ int PdfPageItem::Number() const
 
 void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    updateCurrentLink(d_ptr->provider->getLinkAt(d_ptr->number, event->pos()));
+    updateCurrentLink(d_ptr->provider->link(d_ptr->number, event->pos()));
     updateCursorShape(event->pos());
     QGraphicsItem::hoverMoveEvent(event);
 }
@@ -130,14 +130,14 @@ void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void PdfPageItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    updateCurrentLink(d_ptr->provider->getLinkAt(d_ptr->number, event->pos()));
+    updateCurrentLink(d_ptr->provider->link(d_ptr->number, event->pos()));
     updateCursorShape(event->pos());
     QGraphicsItem::mouseMoveEvent(event);
 }
 
 void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (const QPdfLink link = d_ptr->provider->getLinkAt(d_ptr->number, event->pos()); link.isValid())
+    if (const QPdfLink link = d_ptr->provider->link(d_ptr->number, event->pos()); link.isValid())
         d_ptr->feedback->linkPressed(link);
 
     updateCursorShape(event->pos());
