@@ -1,10 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <QImage>
 
 #include "DocumentLink.h"
-#include "DocumentRenderer.h"
 
+struct DocumentRenderFeedback;
 struct DocumentRenderer;
 struct DocumentParser;
 struct DocumentTextRegion;
@@ -19,7 +20,7 @@ public:
     auto setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void;
 
     // TODO: ~~~
-    auto setImageSourceFeedback(DocumentRenderer::Feedback* feedback) -> void;
+    auto setImageSourceFeedback(DocumentRenderFeedback* feedback) -> void;
 
     auto pageCount() const -> int;
     auto pageSize(int number) const -> QSizeF;
@@ -35,5 +36,5 @@ public:
 private:
     std::shared_ptr<DocumentParser> m_parser;
     std::shared_ptr<DocumentRenderer> m_renderer;
-    DocumentRenderer::Feedback* m_rendererFeedback = nullptr;
+    DocumentRenderFeedback* m_rendererFeedback = nullptr;
 };

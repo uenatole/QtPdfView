@@ -6,8 +6,9 @@
 #include <QWheelEvent>
 
 #include "core/Document.h"
+#include "core/DocumentRenderer.h"
 
-struct ImageSourceFeedback : DocumentRenderer::Feedback
+struct ImageSourceFeedback : DocumentRenderFeedback
 {
     explicit ImageSourceFeedback(DocumentView* view) : _view(view){}
 
