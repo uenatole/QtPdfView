@@ -73,7 +73,7 @@ namespace
     {
         int Page;
         qreal Scale;
-        DocumentImageSource::Feedback* Feedback {};
+        DocumentRenderer::Feedback* Feedback {};
 
         bool operator==(const RenderRequest& other) const
         {
@@ -275,7 +275,7 @@ auto PdfDocumentRenderer::setRenderDelay(int ms) const -> void
     d->dequeueDelayTimer.setInterval(ms);
 }
 
-auto PdfDocumentRenderer::requestImage(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage>
+auto PdfDocumentRenderer::requestPageRender(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage>
 {
     return d->request(page, scale, feedback);
 }

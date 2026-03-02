@@ -18,10 +18,8 @@ int main(int argc, char** argv)
     const auto parser = std::make_shared<PdfDocumentParser>(pdf);
 
     const auto document = std::make_shared<Document>();
-    document->setImageSource(renderer);
-    document->setTextSource(parser);
-    document->setLinkSource(parser);
-    document->setMetaSource(parser);
+    document->setRenderer(renderer);
+    document->setParser(parser);
 
     PdfView view;
 

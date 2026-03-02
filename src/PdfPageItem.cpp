@@ -6,7 +6,7 @@
 #include <QCursor>
 
 #include "core/Document.h"
-#include "core/DocumentTextSource.h"
+#include "core/DocumentParser.h"
 
 struct PdfPageItem::Private
 {

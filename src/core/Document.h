@@ -3,15 +3,11 @@
 #include <memory>
 #include <QPdfLink>
 
-#include "DocumentImageSource.h"
-#include "DocumentMetaSource.h"
+#include "DocumentRenderer.h"
 
+struct DocumentRenderer;
+struct DocumentParser;
 struct DocumentTextRegion;
-
-struct DocumentImageSource;
-struct DocumentTextSource;
-struct DocumentLinkSource;
-struct DocumentMetaSource;
 
 class Document
 {
@@ -19,13 +15,11 @@ public:
     Document();
     ~Document();
 
-    auto setImageSource(const std::shared_ptr<DocumentImageSource>& imageSource) -> void;
-    auto setTextSource(const std::shared_ptr<DocumentTextSource>& textSource) -> void;
-    auto setLinkSource(const std::shared_ptr<DocumentLinkSource>& linkSource) -> void;
-    auto setMetaSource(const std::shared_ptr<DocumentMetaSource>& metaSource) -> void;
+    auto setParser(const std::shared_ptr<DocumentParser>& parser) -> void;
+    auto setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void;
 
     // TODO: ~~~
-    auto setImageSourceFeedback(DocumentImageSource::Feedback* feedback) -> void;
+    auto setImageSourceFeedback(DocumentRenderer::Feedback* feedback) -> void;
 
     auto pageCount() const -> int;
     auto pageSize(int number) const -> QSizeF;
@@ -39,10 +33,7 @@ public:
     auto textRegion() const -> std::unique_ptr<DocumentTextRegion>;
 
 private:
-    std::shared_ptr<DocumentImageSource> m_image;
-    std::shared_ptr<DocumentTextSource> m_text;
-    std::shared_ptr<DocumentLinkSource> m_link;
-    std::shared_ptr<DocumentMetaSource> m_meta;
-
-    DocumentImageSource::Feedback* m_imageFeedback;
+    std::shared_ptr<DocumentParser> m_parser;
+    std::shared_ptr<DocumentRenderer> m_renderer;
+    DocumentRenderer::Feedback* m_rendererFeedback = nullptr;
 };

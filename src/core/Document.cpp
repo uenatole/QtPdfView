@@ -3,124 +3,94 @@
 #include <QPageSize>
 #include <QPdfLink>
 
-#include "DocumentImageSource.h"
-#include "DocumentTextSource.h"
-#include "DocumentLinkSource.h"
-#include "DocumentMetaSource.h"
+#include "DocumentRenderer.h"
+#include "DocumentParser.h"
 
 namespace
 {
-    struct ImageSourceDummy : DocumentImageSource
+    struct DummyParser : DocumentParser
     {
-        [[nodiscard]] auto requestImage(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> override
-        {
-            return std::nullopt;
-        }
-    };
+        auto pageCount() const -> int final { return 0; }
+        auto pagePointSize(int) const -> QSizeF final { return {}; }
+        auto textHit(int, QPointF, uint8_t) const -> bool final { return false; }
 
-    struct TextSourceDummy : DocumentTextSource
-    {
-        [[nodiscard]] auto textHit(int page, QPointF point, uint8_t lod) const -> bool override
+        auto textRegion() const -> std::unique_ptr<DocumentTextRegion> final
         {
-            return false;
-        }
-
-        [[nodiscard]] auto textRegion() const -> std::unique_ptr<DocumentTextRegion> override
-        {
-            struct TextRegionDummy : DocumentTextRegion
+            struct DummyTextRegion : DocumentTextRegion
             {
-                auto configure(int, QRectF, uint8_t) -> void final {}
-                [[nodiscard]] auto lod() const -> uint8_t final { return 0; }
-                [[nodiscard]] auto id() const -> uint64_t final { return 0;}
-                [[nodiscard]] auto text() const -> QString final { return {}; }
-                [[nodiscard]] auto geometry() const -> QList<QRectF> final { return {}; }
+                auto configure(int, QRectF, uint8_t ) -> void final {}
+                auto lod() const -> uint8_t final { return 0; }
+                auto id() const -> uint64_t final { return 0; }
+                auto text() const -> QString final { return {}; }
+                auto geometry() const -> QList<QRectF> final { return {}; }
             };
 
-            return std::make_unique<TextRegionDummy>();
+            return std::make_unique<DummyTextRegion>();
         }
+
+        auto linkHit(int, QPointF) const -> bool override { return false; }
+        auto link(int, QPointF) const -> QPdfLink override { return {}; }
     };
 
-    struct LinkSourceDummy : DocumentLinkSource
+    struct DummyRenderer : DocumentRenderer
     {
-        auto linkHit(int page, QPointF point) const -> bool override { return false; }
-        auto link(int page, QPointF point) const -> QPdfLink override { return {}; }
-    };
-
-    struct MetaSourceDummy : DocumentMetaSource
-    {
-        auto pageCount() const -> int override { return 0; }
-        auto pagePointSize(int page) const -> QSizeF override { return {}; }
+        auto requestPageRender(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> override { return std::nullopt; }
     };
 }
 
 Document::Document()
-    : m_image(std::make_shared<ImageSourceDummy>())
-    , m_text(std::make_shared<TextSourceDummy>())
-    , m_link(std::make_shared<LinkSourceDummy>())
-    , m_meta(std::make_shared<MetaSourceDummy>())
-    , m_imageFeedback(nullptr)
+    : m_parser(std::make_shared<DummyParser>())
+    , m_renderer(std::make_shared<DummyRenderer>())
 {}
 
 Document::~Document() = default;
 
-void Document::setImageSource(const std::shared_ptr<DocumentImageSource>& imageSource)
+auto Document::setParser(const std::shared_ptr<DocumentParser>& parser) -> void
 {
-    m_image = imageSource;
+    m_parser = parser;
 }
 
-void Document::setTextSource(const std::shared_ptr<DocumentTextSource>& textSource)
+auto Document::setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void
 {
-    m_text = textSource;
+    m_renderer = renderer;
 }
 
-void Document::setLinkSource(const std::shared_ptr<DocumentLinkSource>& linkSource)
+auto Document::setImageSourceFeedback(DocumentRenderer::Feedback* feedback) -> void
 {
-    m_link = linkSource;
-}
-
-auto Document::setMetaSource(const std::shared_ptr<DocumentMetaSource>& metaSource) -> void
-{
-    m_meta = metaSource;
-}
-
-auto Document::setImageSourceFeedback(DocumentImageSource::Feedback* feedback) -> void
-{
-    m_imageFeedback = feedback;
+    m_rendererFeedback = feedback;
 }
 
 auto Document::pageCount() const -> int
 {
-    // TODO: impl
-    return m_meta->pageCount();
+    return m_parser->pageCount();
 }
 
 auto Document::pageSize(int number) const -> QSizeF
 {
-    // TODO: impl
-    return m_meta->pagePointSize(number);
+    return m_parser->pagePointSize(number);
 }
 
 auto Document::requestImage(int number, qreal scale) const -> std::optional<QImage>
 {
-    return m_image->requestImage(number, scale, m_imageFeedback);
+    return m_renderer->requestPageRender(number, scale, m_rendererFeedback);
 }
 
 auto Document::linkHit(int page, QPointF point) const -> bool
 {
-    return m_link->linkHit(page, point);
+    return m_parser->linkHit(page, point);
 }
 
 auto Document::link(int page, QPointF point) const -> QPdfLink
 {
-    return m_link->link(page, point);
+    return m_parser->link(page, point);
 }
 
 auto Document::textHit(int page, QPointF point, uint8_t lod) const -> bool
 {
-    return m_text->textHit(page, point, lod);
+    return m_parser->textHit(page, point, lod);
 }
 
 auto Document::textRegion() const -> std::unique_ptr<DocumentTextRegion>
 {
-    return m_text->textRegion();
+    return m_parser->textRegion();
 }

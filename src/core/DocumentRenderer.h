@@ -3,7 +3,7 @@
 #include <optional>
 #include <QImage>
 
-struct DocumentImageSource
+struct DocumentRenderer
 {
     struct Feedback
     {
@@ -13,7 +13,7 @@ struct DocumentImageSource
         virtual void imageReady(int page) const = 0;
     };
 
-    virtual ~DocumentImageSource() = default;
+    virtual ~DocumentRenderer() = default;
 
-    virtual auto requestImage(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> = 0;
+    virtual auto requestPageRender(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> = 0;
 };

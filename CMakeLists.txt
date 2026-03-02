@@ -17,10 +17,8 @@ add_library(QtPdfView
         src/PdfView.h
         src/PdfPageItem.cpp
         src/PdfPageItem.h
-        src/core/DocumentImageSource.h
-        src/core/DocumentTextSource.h
-        src/core/DocumentLinkSource.h
-        src/core/DocumentMetaSource.h
+        src/core/DocumentParser.h
+        src/core/DocumentRenderer.h
         src/core/Document.cpp
         src/core/Document.h
         src/backend/pdf/PdfDocumentRenderer.cpp
