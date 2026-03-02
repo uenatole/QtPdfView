@@ -15,6 +15,7 @@ struct PdfPageItem::Private
     Private(PdfPageProvider* provider, Feedback* feedback, const int number)
         : provider(provider)
         , feedback(feedback)
+        , textRegion(provider->textRegion())
         , number(number)
         , pointSize(provider->pagePointSize(number))
     {}
@@ -22,11 +23,11 @@ struct PdfPageItem::Private
 private:
     PdfPageProvider* const provider;
     Feedback* const feedback;
+    const std::unique_ptr<DocumentTextRegion> textRegion;
 
     const int number;
     const QSizeF pointSize;
 
-    QPair<int, int> selectionIndices = { -1, -1 };
     QRectF selectionRect;
     QPdfLink currentLink;
 };
@@ -69,7 +70,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(206, 235, 249, 200));
 
-        for (const QList<QRectF> geometries = d_ptr->provider->getGeometryAt(d_ptr->number, d_ptr->selectionRect); const QRectF& geometry : geometries)
+        for (const QList<QRectF> geometries = d_ptr->textRegion->geometry(); const QRectF& geometry : geometries)
             painter->drawRect(geometry.adjusted(-0, -2, +0, +2));
     }
 
@@ -91,17 +92,13 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
 {
     if (rect != d_ptr->selectionRect)
     {
-        // NOTE: it's optimized way to compare "selections"
-        // TODO: aggregate 'indices', 'geometry', 'text' into one interface instance "DocumentTextSelection"
-        const auto indices = rect.isNull()
-            ? QPair { -1, -1 }
-            : d_ptr->provider->getIndicesAt(d_ptr->number, rect);
-
         d_ptr->selectionRect = rect;
 
-        if (indices != d_ptr->selectionIndices)
+        const auto idTmp = d_ptr->textRegion->id();
+        d_ptr->textRegion->configure(d_ptr->number, rect);
+
+        if (idTmp != d_ptr->textRegion->id())
         {
-            d_ptr->selectionIndices = indices;
             update();
         }
     }
@@ -109,7 +106,7 @@ void PdfPageItem::SetSelectionRect(const QRectF& rect)
 
 QString PdfPageItem::GetSelectedText() const
 {
-    return d_ptr->provider->getTextAt(d_ptr->number, d_ptr->selectionRect);
+    return d_ptr->textRegion->text();
 }
 
 int PdfPageItem::Number() const
@@ -170,7 +167,7 @@ void PdfPageItem::updateCursorShape(std::optional<QPointF> pos)
     {
         setCursor(Qt::CursorShape::PointingHandCursor);
     }
-    else if (const auto geom = d_ptr->provider->getGeometryAt(d_ptr->number, { *pos, *pos }); !geom.isEmpty())
+    else if (d_ptr->provider->textHit(d_ptr->number, *pos))
     {
         setCursor(Qt::CursorShape::IBeamCursor);
     }
