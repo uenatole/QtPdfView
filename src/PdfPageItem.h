@@ -1,9 +1,8 @@
 #pragma once
 
 #include <QGraphicsItem>
-#include <QPdfSelection>
 
-class PdfPageProvider;
+class Document;
 class QPdfLink;
 
 class PdfPageItem : public QGraphicsItem
@@ -15,7 +14,7 @@ public:
         virtual void linkPressed(const QPdfLink&) = 0;
     };
 
-    PdfPageItem(PdfPageProvider* provider, Feedback* feedback, int number);
+    PdfPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, int number);
     ~PdfPageItem() override;
 
     QRectF boundingRect() const override;

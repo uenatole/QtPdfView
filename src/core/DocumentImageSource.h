@@ -9,10 +9,11 @@ struct DocumentImageSource
     {
         virtual ~Feedback() = default;
 
-        virtual bool isActual(int page) = 0;
-        virtual void imageReady(int page) = 0;
+        virtual bool isActual(int page) const = 0;
+        virtual void imageReady(int page) const = 0;
     };
 
     virtual ~DocumentImageSource() = default;
-    [[nodiscard]] virtual std::optional<QImage> requestImage(int page, qreal scale) = 0;
+
+    virtual auto requestImage(int page, qreal scale, Feedback* feedback) const -> std::optional<QImage> = 0;
 };

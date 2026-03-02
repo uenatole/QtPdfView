@@ -1,27 +1,27 @@
 #include "PdfPageItem.h"
-#include "PdfPageItem.h"
 
 #include <QPainter>
 #include <QPdfDocument>
 #include <QGraphicsSceneHoverEvent>
 #include <QCursor>
 
-#include "PdfPageProvider.h"
+#include "core/Document.h"
+#include "core/DocumentTextSource.h"
 
 struct PdfPageItem::Private
 {
     friend class PdfPageItem;
 
-    Private(PdfPageProvider* provider, Feedback* feedback, const int number)
-        : provider(provider)
+    Private(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
+        : document(document)
         , feedback(feedback)
-        , textRegion(provider->textRegion())
+        , textRegion(document->textRegion())
         , number(number)
-        , pointSize(provider->pagePointSize(number))
+        , pointSize(document->pageSize(number))
     {}
 
 private:
-    PdfPageProvider* const provider;
+    std::shared_ptr<Document> const document;
     Feedback* const feedback;
     const std::unique_ptr<DocumentTextRegion> textRegion;
 
@@ -32,8 +32,8 @@ private:
     QPdfLink currentLink;
 };
 
-PdfPageItem::PdfPageItem(PdfPageProvider* provider, Feedback* feedback, const int number)
-    : d_ptr(new Private(provider, feedback, number))
+PdfPageItem::PdfPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
+    : d_ptr(new Private(document, feedback, number))
 {
     setCacheMode(NoCache);
     setAcceptHoverEvents(true);
@@ -57,7 +57,7 @@ void PdfPageItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     // TODO: draw as underlay after other operations to exclude possible composition interference (~~~)
     painter->fillRect(boundingRect(), Qt::white);
 
-    if (const auto image = d_ptr->provider->requestImage(d_ptr->number, scale); image)
+    if (const auto image = d_ptr->document->requestImage(d_ptr->number, scale); image)
         painter->drawImage(boundingRect(), *image);
 
     painter->save();
@@ -116,7 +116,7 @@ int PdfPageItem::Number() const
 
 void PdfPageItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    updateCurrentLink(d_ptr->provider->link(d_ptr->number, event->pos()));
+    updateCurrentLink(d_ptr->document->link(d_ptr->number, event->pos()));
     updateCursorShape(event->pos());
     QGraphicsItem::hoverMoveEvent(event);
 }
@@ -130,14 +130,14 @@ void PdfPageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void PdfPageItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    updateCurrentLink(d_ptr->provider->link(d_ptr->number, event->pos()));
+    updateCurrentLink(d_ptr->document->link(d_ptr->number, event->pos()));
     updateCursorShape(event->pos());
     QGraphicsItem::mouseMoveEvent(event);
 }
 
 void PdfPageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (const QPdfLink link = d_ptr->provider->link(d_ptr->number, event->pos()); link.isValid())
+    if (const QPdfLink link = d_ptr->document->link(d_ptr->number, event->pos()); link.isValid())
         d_ptr->feedback->linkPressed(link);
 
     updateCursorShape(event->pos());
@@ -167,7 +167,7 @@ void PdfPageItem::updateCursorShape(std::optional<QPointF> pos)
     {
         setCursor(Qt::CursorShape::PointingHandCursor);
     }
-    else if (d_ptr->provider->textHit(d_ptr->number, *pos))
+    else if (d_ptr->document->textHit(d_ptr->number, *pos))
     {
         setCursor(Qt::CursorShape::IBeamCursor);
     }

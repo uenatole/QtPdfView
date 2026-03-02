@@ -17,11 +17,17 @@ add_library(QtPdfView
         src/PdfView.h
         src/PdfPageItem.cpp
         src/PdfPageItem.h
-        src/PdfPageProvider.cpp
-        src/PdfPageProvider.h
         src/core/DocumentImageSource.h
         src/core/DocumentTextSource.h
-        src/core/DocumentLinkSource.h)
+        src/core/DocumentLinkSource.h
+        src/core/DocumentMetaSource.h
+        src/core/Document.cpp
+        src/core/Document.h
+        src/backend/pdf/PdfDocumentRenderer.cpp
+        src/backend/pdf/PdfDocumentRenderer.h
+        src/backend/pdf/PdfDocumentParser.cpp
+        src/backend/pdf/PdfDocumentParser.h
+)
 
 target_link_libraries(QtPdfView PUBLIC Qt::Pdf Qt::Widgets)
 target_include_directories(QtPdfView PUBLIC src)
