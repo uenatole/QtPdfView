@@ -1,13 +1,13 @@
 #pragma once
 
+#include <QPdfSelection>
 #include <QGraphicsView>
 #include <QWidget>
 
-#include <QPdfSelection>
 #include "PdfPageItem.h"
 
-class PdfPageProvider;
-class QPdfDocument;
+class QPdfSelection;
+class Document;
 
 // NOTE: right now depends on QPdfSelection and used for convenience
 // TODO: migrate from Qt::Pdf prior to own implementation
@@ -27,7 +27,7 @@ public:
     explicit PdfView(QWidget* parent = nullptr);
     ~PdfView() override;
 
-    void setDocument(QPdfDocument* document);
+    void setDocument(const std::shared_ptr<Document>& document);
 
     using QGraphicsView::transformationAnchor;
     using QGraphicsView::setTransformationAnchor;
@@ -52,7 +52,7 @@ private:
     QGraphicsItem* getPageItem(int page) const;
 
     bool m_wheelZoomingDisabled = true;
-    std::unique_ptr<PdfPageProvider> m_provider;
+    std::shared_ptr<Document> m_document;
     std::unique_ptr<PdfPageItem::Feedback> m_feedback;
 
     std::optional<QPointF> m_selectionStart;

@@ -7,7 +7,8 @@
 #include <QWheelEvent>
 
 #include "PdfPageItem.h"
-#include "PdfPageProvider.h"
+#include "core/Document.h"
+#include "core/DocumentImageSource.h"
 
 PdfViewSelection::PdfViewSelection(const QList<QPdfSelection>& selections)
     : m_selections(selections)
@@ -22,11 +23,11 @@ void PdfViewSelection::copyToClipboard(const QClipboard::Mode mode) const
     QGuiApplication::clipboard()->setText(text, mode);
 }
 
-struct ImageSourceFeedback : PdfPageProvider::Feedback
+struct ImageSourceFeedback : DocumentImageSource::Feedback
 {
     explicit ImageSourceFeedback(PdfView* view) : _view(view){}
 
-    [[nodiscard]] bool isActual(const int page) override
+    [[nodiscard]] bool isActual(const int page) const final
     {
         const auto item = _view->getPageItem(page);
 
@@ -37,7 +38,7 @@ struct ImageSourceFeedback : PdfPageProvider::Feedback
         return itemRect.intersects(item->boundingRect());
     }
 
-    void imageReady(const int page) override
+    void imageReady(const int page) const final
     {
         const auto item = _view->getPageItem(page);
         item->update();
@@ -62,19 +63,15 @@ private:
 
 PdfView::PdfView(QWidget* parent)
     : QGraphicsView(parent)
-    , m_provider(new PdfPageProvider())
     , m_feedback(new PageItemFeedback(this))
-{
-    m_provider->setFeedback(new ImageSourceFeedback(this));
-    // TODO: keep track QWindow::screenChanged
-    m_provider->setPixelRatio(devicePixelRatio());
-}
+{}
 
 PdfView::~PdfView(){}
 
-void PdfView::setDocument(QPdfDocument* document)
+void PdfView::setDocument(const std::shared_ptr<Document>& document)
 {
-    m_provider->setDocument(document);
+    m_document = document;
+    m_document->setImageSourceFeedback(new ImageSourceFeedback(this));
 
     auto* scene = new QGraphicsScene();
     scene->setBackgroundBrush(palette().brush(QPalette::Dark));
@@ -86,9 +83,9 @@ void PdfView::setDocument(QPdfDocument* document)
 
     for (int page = 0; page < document->pageCount(); ++page)
     {
-        QSizeF pagePointSize = document->pagePointSize(page);
+        QSizeF pagePointSize = document->pageSize(page);
 
-        const auto item = new PdfPageItem(m_provider.get(), m_feedback.get(), page);
+        const auto item = new PdfPageItem(document, m_feedback.get(), page);
         item->setPos(documentMargins, yCursor);
 
         yCursor += pagePointSize.height() + documentMargins;
