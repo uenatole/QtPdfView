@@ -8,9 +8,9 @@
 #include "core/Document.h"
 #include "core/DocumentRenderer.h"
 
-struct ImageSourceFeedback : DocumentRenderFeedback
+struct RenderFeedback : DocumentRenderFeedback
 {
-    explicit ImageSourceFeedback(DocumentView* view) : _view(view){}
+    explicit RenderFeedback(DocumentView* view) : _view(view){}
 
     [[nodiscard]] bool isActual(const int page) const final
     {
@@ -77,7 +77,7 @@ DocumentView::~DocumentView(){}
 void DocumentView::setDocument(const std::shared_ptr<Document>& document)
 {
     m_document = document;
-    m_document->setImageSourceFeedback(new ImageSourceFeedback(this));
+    m_document->setRenderFeedback(new RenderFeedback(this));
 
     auto* scene = new QGraphicsScene();
     scene->setBackgroundBrush(palette().brush(QPalette::Dark));

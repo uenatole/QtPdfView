@@ -55,7 +55,7 @@ auto Document::setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) ->
     m_renderer = renderer;
 }
 
-auto Document::setImageSourceFeedback(DocumentRenderFeedback* feedback) -> void
+auto Document::setRenderFeedback(DocumentRenderFeedback* feedback) -> void
 {
     m_rendererFeedback = feedback;
 }

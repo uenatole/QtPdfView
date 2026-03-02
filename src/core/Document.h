@@ -20,7 +20,7 @@ public:
     auto setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void;
 
     // TODO: ~~~
-    auto setImageSourceFeedback(DocumentRenderFeedback* feedback) -> void;
+    auto setRenderFeedback(DocumentRenderFeedback* feedback) -> void;
 
     auto pageCount() const -> int;
     auto pageSize(int number) const -> QSizeF;
