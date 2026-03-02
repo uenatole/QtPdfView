@@ -29,7 +29,7 @@ namespace
         }
 
         auto linkHit(int, QPointF) const -> bool override { return false; }
-        auto link(int, QPointF) const -> QPdfLink override { return {}; }
+        auto link(int, QPointF) const -> std::optional<DocumentLink> override { return std::nullopt; }
     };
 
     struct DummyRenderer : DocumentRenderer
@@ -80,7 +80,7 @@ auto Document::linkHit(int page, QPointF point) const -> bool
     return m_parser->linkHit(page, point);
 }
 
-auto Document::link(int page, QPointF point) const -> QPdfLink
+auto Document::link(int page, QPointF point) const -> std::optional<DocumentLink>
 {
     return m_parser->link(page, point);
 }

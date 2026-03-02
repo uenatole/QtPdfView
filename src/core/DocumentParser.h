@@ -1,7 +1,8 @@
 #pragma once
 
 #include <QRectF>
-#include <QPdfLink>
+
+#include "DocumentLink.h"
 
 struct DocumentTextRegion
 {
@@ -28,5 +29,5 @@ struct DocumentParser
 
     // TODO: get rid off QPdfLink to remove pdf-specific term
     virtual auto linkHit(int page, QPointF point) const -> bool = 0;
-    virtual auto link(int page, QPointF point) const -> QPdfLink = 0;
+    virtual auto link(int page, QPointF point) const -> std::optional<DocumentLink> = 0;
 };

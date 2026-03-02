@@ -37,9 +37,6 @@ public:
 
     QString getSelectedText() const;
 
-    // TODO: hide it
-    void processLink(const QPdfLink& link);
-
 protected:
     void wheelEvent(QWheelEvent*) override;
 
@@ -49,6 +46,8 @@ protected:
 
 private:
     friend struct ImageSourceFeedback;
+    friend struct PageItemFeedback;
+
     QGraphicsItem* getPageItem(int page) const;
 
     bool m_wheelZoomingDisabled = true;

@@ -3,7 +3,7 @@
 #include <QGraphicsItem>
 
 class Document;
-class QPdfLink;
+class DocumentLink;
 
 class DocumentPageItem : public QGraphicsItem
 {
@@ -11,7 +11,7 @@ public:
     struct Feedback
     {
         virtual ~Feedback() = default;
-        virtual void linkPressed(const QPdfLink&) = 0;
+        virtual void linkPressed(const DocumentLink&) = 0;
     };
 
     DocumentPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, int number);
@@ -34,7 +34,7 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* mouseEvent) override;
 
 private:
-    void updateCurrentLink(const QPdfLink& link);
+    void updateCurrentLink(const std::optional<DocumentLink>& link);
     void updateCursorShape(std::optional<QPointF> pos = std::nullopt);
 
     struct Private;

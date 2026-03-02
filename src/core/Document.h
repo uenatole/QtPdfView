@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <QPdfLink>
 
+#include "DocumentLink.h"
 #include "DocumentRenderer.h"
 
 struct DocumentRenderer;
@@ -27,7 +27,7 @@ public:
     auto requestImage(int number, qreal scale) const -> std::optional<QImage>;
 
     auto linkHit(int page, QPointF point) const -> bool;
-    auto link(int page, QPointF point) const -> QPdfLink;
+    auto link(int page, QPointF point) const -> std::optional<DocumentLink>;
 
     auto textHit(int page, QPointF point, uint8_t lod = -1) const -> bool;
     auto textRegion() const -> std::unique_ptr<DocumentTextRegion>;
