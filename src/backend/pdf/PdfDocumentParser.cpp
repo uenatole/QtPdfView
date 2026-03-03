@@ -53,18 +53,37 @@ namespace
 
         [[nodiscard]] QPair<QList<LineLayout>::const_iterator, QList<LineLayout>::const_iterator> findLines(const QPointF begin, const QPointF end) const
         {
-            const auto firstLineIt = std::lower_bound(Lines.begin(), Lines.end(), begin, [](const LineLayout& line, const QPointF& point) -> bool {
-                return line.Geometry.bottom() < point.y();
-            });
+            QRectF rect = QRectF(begin, end).normalized();
 
-            const auto lastLineIt = std::upper_bound(Lines.begin(), Lines.end(), end, [](const QPointF& point, const LineLayout& line) -> bool {
-                return line.Geometry.top() > point.y();
-            });
+            auto first = std::partition_point(Lines.constBegin(), Lines.constEnd(),
+                [&rect](const LineLayout& line) {
+                    return line.Geometry.bottom() < rect.top();
+                });
 
-            if (firstLineIt == lastLineIt)
-                return { Lines.end(), Lines.end() };
+            auto last = std::partition_point(first, Lines.constEnd(),
+                [&rect](const LineLayout& line) {
+                    return line.Geometry.top() <= rect.bottom();
+                });
 
-            return {firstLineIt, lastLineIt - 1 };
+            if (first == Lines.constEnd() || last == Lines.constBegin() || first >= last) {
+                return { Lines.constEnd(), Lines.constEnd() };
+            }
+
+            --last;
+
+            while (first <= last && !first->Geometry.intersects(rect)) {
+                ++first;
+            }
+
+            if (first > last) {
+                return { Lines.constEnd(), Lines.constEnd() };
+            }
+
+            while (last >= first && !last->Geometry.intersects(rect)) {
+                --last;
+            }
+
+            return { first, last };
         }
 
 
