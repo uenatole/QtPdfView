@@ -2,7 +2,10 @@
 #include <QPdfDocument>
 #include <QShortcut>
 
-#include "../src/ui/DocumentView.h"
+#include "ui/DocumentView.h"
+#include "ui/addons/DocumentSelector.h"
+#include "ui/addons/DocumentZoomer.h"
+
 #include "core/Document.h"
 #include "backend/pdf/PdfDocumentParser.h"
 #include "backend/pdf/PdfDocumentRenderer.h"
@@ -23,6 +26,9 @@ int main(int argc, char** argv)
 
     DocumentView view;
 
+    DocumentSelector selector(&view);
+    DocumentZoomer zoomer(&view);
+
     const QShortcut copyShortcut(QKeySequence(Qt::CTRL | Qt::Key_C), &view);
     QObject::connect(&copyShortcut, &QShortcut::activated, [&]
     {
@@ -30,7 +36,6 @@ int main(int argc, char** argv)
     });
 
     view.setDocument(document);
-    view.setWheelZooming(true);
     view.show();
 
     return QApplication::exec();

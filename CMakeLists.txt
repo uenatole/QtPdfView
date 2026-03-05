@@ -30,6 +30,11 @@ add_library(QtPdfView
         src/ui/DocumentView.h
         src/ui/DocumentPageItem.cpp
         src/ui/DocumentPageItem.h
+
+        src/ui/addons/DocumentSelector.cpp
+        src/ui/addons/DocumentSelector.h
+        src/ui/addons/DocumentZoomer.cpp
+        src/ui/addons/DocumentZoomer.h
 )
 
 target_link_libraries(QtPdfView PUBLIC Qt::Pdf Qt::Widgets)

@@ -19,17 +19,7 @@ public:
     using QGraphicsView::transformationAnchor;
     using QGraphicsView::setTransformationAnchor;
 
-    void setWheelZooming(bool enabled = true);
-    bool wheelZooming() const;
-
     QString getSelectedText() const;
-
-protected:
-    void wheelEvent(QWheelEvent*) override;
-
-    void mousePressEvent(QMouseEvent*) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
     friend struct RenderFeedback;
@@ -37,7 +27,6 @@ private:
 
     QGraphicsItem* getPageItem(int page) const;
 
-    bool m_wheelZoomingDisabled = true;
     std::shared_ptr<Document> m_document;
     std::unique_ptr<DocumentPageItem::Feedback> m_feedback;
 

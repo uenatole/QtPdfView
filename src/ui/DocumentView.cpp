@@ -115,16 +115,6 @@ void DocumentView::setDocument(const std::shared_ptr<Document>& document)
     setTransformationAnchor(AnchorUnderMouse);
 }
 
-void DocumentView::setWheelZooming(bool enabled)
-{
-    m_wheelZoomingDisabled = !enabled;
-}
-
-bool DocumentView::wheelZooming() const
-{
-    return m_wheelZoomingDisabled;
-}
-
 QString DocumentView::getSelectedText() const
 {
     QString text;
@@ -133,96 +123,6 @@ QString DocumentView::getSelectedText() const
         text += dynamic_cast<const DocumentPageItem*>(page)->GetSelectedText();
 
     return text;
-}
-
-void DocumentView::wheelEvent(QWheelEvent* event)
-{
-    if (m_wheelZoomingDisabled)
-    {
-        QGraphicsView::wheelEvent(event);
-        return;
-    }
-
-    constexpr auto calculateZoomStep = [](const qreal currentZoomFactor, const int sign) -> qreal
-    {
-        constexpr qreal baseStep = 0.1;
-        constexpr qreal ceilStep = 0.9;
-
-        const auto factor = std::ceil(currentZoomFactor + sign * baseStep);
-        return qMin(baseStep * factor, ceilStep);
-    };
-
-    if (event->modifiers() & Qt::ControlModifier)
-    {
-        const int delta = event->angleDelta().y();
-
-        const ViewportAnchor anchor = transformationAnchor();
-        setTransformationAnchor(AnchorUnderMouse);
-
-        const qreal currentZoomFactor = transform().m11();
-        const qreal stepSize = calculateZoomStep(currentZoomFactor, (delta > 0) ? +1 : -1);
-
-        const qreal zoomChange = (delta > 0) ? stepSize : -stepSize;
-        const qreal newZoomFactor = qBound(0.1, currentZoomFactor + zoomChange, 10.0);
-
-        const auto ff = newZoomFactor / currentZoomFactor;
-
-        scale(ff, ff);
-        setTransformationAnchor(anchor);
-
-        event->accept();
-    }
-    else
-    {
-        QGraphicsView::wheelEvent(event);
-    }
-}
-
-void DocumentView::mousePressEvent(QMouseEvent* event)
-{
-    if (event->button() == Qt::LeftButton)
-    {
-        for (const auto item : items())
-            if (const auto page = dynamic_cast<DocumentPageItem*>(item); page)
-                page->SetSelectionRect({});
-
-        m_selectionStart = mapToScene(event->pos());
-    }
-
-    QGraphicsView::mousePressEvent(event);
-}
-
-void DocumentView::mouseReleaseEvent(QMouseEvent* event)
-{
-    m_selectionStart.reset();
-
-    QGraphicsView::mouseReleaseEvent(event);
-}
-
-void DocumentView::mouseMoveEvent(QMouseEvent* event)
-{
-    // NOTE: this progressive selection method is quite inefficient due to selection from the very beginning on every update.
-    // TODO: provide stateful selection API to make it truly progressive.
-    if (m_selectionStart)
-    {
-        const auto first = *m_selectionStart;
-        const auto second = mapToScene(event->pos());
-        const auto selectionRect = QRectF(first, second);
-
-        for (const auto item : items())
-            if (const auto page = dynamic_cast<DocumentPageItem*>(item); page)
-            {
-                const QRectF sceneIntersectionRect = selectionRect.intersected(page->sceneBoundingRect());
-
-                if (sceneIntersectionRect.isNull())
-                    continue;
-
-                const QRectF pageIntersectionRect = page->mapRectFromScene(sceneIntersectionRect);
-                page->SetSelectionRect(pageIntersectionRect);
-            }
-    }
-
-    QGraphicsView::mouseMoveEvent(event);
 }
 
 QGraphicsItem* DocumentView::getPageItem(const int page) const
