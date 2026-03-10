@@ -201,7 +201,7 @@ private:
         requests.pop_front();
 
         QFuture<void> future =
-            document->render(request.Page, request.Scale)
+            document->render(request.Page, request.Scale * pixelRatio)
             .then(QThread::currentThread(), [this, request](const QImage& image){
                 (void) renderCache.insert(request.Page, request.Scale, new QImage(image));
                 request.Feedback->imageReady(request.Page);
