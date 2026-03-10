@@ -1,19 +1,16 @@
 #pragma once
 
-#include "core/DocumentParser.h"
+#include "DocumentParser.h"
 
-class QPdfDocument;
-
-class PdfDocumentParser : public DocumentParser
+class StandardDocumentParser : public DocumentParser
 {
 public:
-    explicit PdfDocumentParser(const std::shared_ptr<QPdfDocument>& document);
-    ~PdfDocumentParser() override;
+    StandardDocumentParser();
+    ~StandardDocumentParser() override;
 
     auto setLayoutCacheLimit(qreal bytes) const -> void;
 
-    auto pageCount() const -> int override;
-    auto pagePointSize(int page) const -> QSizeF override;
+    auto setDocument(std::shared_ptr<const Document> document) -> void final;
 
     auto textHit(int page, QPointF point, uint8_t lod) const -> bool final;
     auto textRegion() const -> std::unique_ptr<DocumentTextRegion> final;

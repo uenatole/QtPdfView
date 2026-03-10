@@ -5,6 +5,7 @@
 
 #include "DocumentLink.h"
 
+struct Document;
 struct DocumentRenderFeedback;
 struct DocumentRenderer;
 struct DocumentParser;
@@ -15,6 +16,8 @@ class DocumentFacade
 public:
     DocumentFacade();
     ~DocumentFacade();
+
+    auto setDocument(const std::shared_ptr<Document>& document) -> void;
 
     auto setParser(const std::shared_ptr<DocumentParser>& parser) -> void;
     auto setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void;
@@ -34,6 +37,8 @@ public:
     auto textRegion() const -> std::unique_ptr<DocumentTextRegion>;
 
 private:
+    std::shared_ptr<Document> m_document;
+
     std::shared_ptr<DocumentParser> m_parser;
     std::shared_ptr<DocumentRenderer> m_renderer;
     DocumentRenderFeedback* m_rendererFeedback = nullptr;
