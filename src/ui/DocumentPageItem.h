@@ -2,7 +2,7 @@
 
 #include <QGraphicsItem>
 
-class Document;
+class DocumentFacade;
 class DocumentLink;
 
 class DocumentPageItem : public QGraphicsItem
@@ -14,7 +14,7 @@ public:
         virtual void linkPressed(const DocumentLink&) = 0;
     };
 
-    DocumentPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, int number);
+    DocumentPageItem(const std::shared_ptr<DocumentFacade>& document, Feedback* feedback, int number);
     ~DocumentPageItem() override;
 
     QRectF boundingRect() const override;

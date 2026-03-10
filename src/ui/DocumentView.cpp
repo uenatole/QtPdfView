@@ -5,7 +5,7 @@
 #include <QGraphicsEffect>
 #include <QWheelEvent>
 
-#include "core/Document.h"
+#include "core/DocumentFacade.h"
 #include "core/DocumentRenderer.h"
 
 struct RenderFeedback : DocumentRenderFeedback
@@ -74,7 +74,7 @@ DocumentView::DocumentView(QWidget* parent)
 
 DocumentView::~DocumentView(){}
 
-void DocumentView::setDocument(const std::shared_ptr<Document>& document)
+void DocumentView::setDocument(const std::shared_ptr<DocumentFacade>& document)
 {
     m_document = document;
     m_document->setRenderFeedback(new RenderFeedback(this));

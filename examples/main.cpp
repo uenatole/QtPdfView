@@ -6,7 +6,7 @@
 #include "ui/addons/DocumentSelector.h"
 #include "ui/addons/DocumentZoomer.h"
 
-#include "core/Document.h"
+#include "core/DocumentFacade.h"
 #include "backend/pdf/PdfDocumentParser.h"
 #include "backend/pdf/PdfDocumentRenderer.h"
 
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     const auto renderer = std::make_shared<PdfDocumentRenderer>(pdf);
     const auto parser = std::make_shared<PdfDocumentParser>(pdf);
 
-    const auto document = std::make_shared<Document>();
+    const auto document = std::make_shared<DocumentFacade>();
     document->setRenderer(renderer);
     document->setParser(parser);
 

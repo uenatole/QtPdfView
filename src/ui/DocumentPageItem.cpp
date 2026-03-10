@@ -4,14 +4,14 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QCursor>
 
-#include "core/Document.h"
+#include "core/DocumentFacade.h"
 #include "core/DocumentParser.h"
 
 struct DocumentPageItem::Private
 {
     friend class DocumentPageItem;
 
-    Private(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
+    Private(const std::shared_ptr<DocumentFacade>& document, Feedback* feedback, const int number)
         : document(document)
         , feedback(feedback)
         , textRegion(document->textRegion())
@@ -20,7 +20,7 @@ struct DocumentPageItem::Private
     {}
 
 private:
-    std::shared_ptr<Document> const document;
+    std::shared_ptr<DocumentFacade> const document;
     Feedback* const feedback;
     const std::unique_ptr<DocumentTextRegion> textRegion;
 
@@ -31,7 +31,7 @@ private:
     std::optional<DocumentLink> currentLink;
 };
 
-DocumentPageItem::DocumentPageItem(const std::shared_ptr<Document>& document, Feedback* feedback, const int number)
+DocumentPageItem::DocumentPageItem(const std::shared_ptr<DocumentFacade>& document, Feedback* feedback, const int number)
     : d_ptr(new Private(document, feedback, number))
 {
     setCacheMode(NoCache);
