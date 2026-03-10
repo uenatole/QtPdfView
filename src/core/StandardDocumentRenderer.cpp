@@ -1,11 +1,10 @@
-#include "PdfDocumentRenderer.h"
+#include "StandardDocumentRenderer.h"
 
-#include <QPdfDocument>
 #include <QtConcurrent/QtConcurrentRun>
-
 #include <QTimer>
 #include <QElapsedTimer>
 
+#include "Document.h"
 #include "custom/QCacheExt.h"
 
 namespace
@@ -64,6 +63,12 @@ namespace
             _storage.setMaxCost(bytes);
         }
 
+        void clear()
+        {
+            _storage.clear();
+            _keySets.clear();
+        }
+
     private:
         mutable QCacheExt<std::pair<int, qreal>, QImage> _storage;
         mutable QHash<int, std::set<qreal>> _keySets;
@@ -98,10 +103,9 @@ namespace
     };
 }
 
-struct PdfDocumentRenderer::Private
+struct StandardDocumentRenderer::Private
 {
-    explicit Private(const std::shared_ptr<QPdfDocument>& document_)
-        : document(document_)
+    explicit Private()
     {
         dequeueDelayTimer.setSingleShot(true);
         dequeueDelayTimer.setInterval(50);
@@ -196,50 +200,22 @@ private:
         RenderRequest request = std::move(requests.front());
         requests.pop_front();
 
-        QFuture<void> future = QtConcurrent::run(
-            [document=document, page=request.Page, scale=request.Scale, ratio=pixelRatio](QPromise<QImage>& promise)
-            {
-                struct PromiseCancel : QPdfDocument::ICancel {
-                    explicit PromiseCancel(QPromise<QImage>& promise) : m_promise(promise) {}
-                    bool isCancelled() final
-                    {
-                        return m_promise.isCanceled();
-                    }
+        QFuture<void> future =
+            document->render(request.Page, request.Scale)
+            .then(QThread::currentThread(), [this, request](const QImage& image){
+                (void) renderCache.insert(request.Page, request.Scale, new QImage(image));
+                request.Feedback->imageReady(request.Page);
 
-                private:
-                    QPromise<QImage>& m_promise;
-                };
-
-                const auto pointSize = document->pagePointSize(page);
-                const auto renderSize = pointSize * scale * ratio;
-                const auto size = renderSize.toSize();
-
-                const auto cancel = std::make_unique<PromiseCancel>(promise);
-
-                QElapsedTimer timer;
-                timer.start();
-                const QImage result = document->render2(page, size, cancel.get());
-
-                if (!result.isNull())
-                    qDebug() << "Render finished: page =" << page << "scale =" << scale << " time =" << timer.elapsed() << "ms";
-
-                promise.addResult(result);
-            }
-        )
-        .then(QThread::currentThread(), [this, request](const QImage& image){
-            (void) renderCache.insert(request.Page, request.Scale, new QImage(image));
-            request.Feedback->imageReady(request.Page);
-
-            renderState.reset();
-            tryDequeueRenderRequest();
-        });
+                renderState.reset();
+                tryDequeueRenderRequest();
+            });
 
         renderState.emplace(request, future);
     }
 
-    friend class PdfDocumentRenderer;
+    friend class StandardDocumentRenderer;
 
-    const std::shared_ptr<QPdfDocument> document;
+    std::shared_ptr<const Document> document;
 
     qreal pixelRatio = 1.0;
 
@@ -251,31 +227,42 @@ private:
     std::optional<RenderState> renderState;
 };
 
-PdfDocumentRenderer::PdfDocumentRenderer(const std::shared_ptr<QPdfDocument>& document)
-    : d(new Private(document))
+StandardDocumentRenderer::StandardDocumentRenderer()
+    : d(std::make_unique<Private>())
 {
     setRenderCacheLimit(512 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
 }
 
-PdfDocumentRenderer::~PdfDocumentRenderer() = default;
+StandardDocumentRenderer::~StandardDocumentRenderer() = default;
 
-auto PdfDocumentRenderer::setPixelRatio(qreal ratio) const -> void
+auto StandardDocumentRenderer::setPixelRatio(qreal ratio) const -> void
 {
     // TODO: invalidate cache (?) or take ratio in account with {scale} (!)
     d->pixelRatio = ratio;
 }
 
-auto PdfDocumentRenderer::setRenderCacheLimit(qreal bytes) const -> void
+auto StandardDocumentRenderer::setRenderCacheLimit(qreal bytes) const -> void
 {
     d->renderCache.setLimit(bytes);
 }
 
-auto PdfDocumentRenderer::setRenderDelay(int ms) const -> void
+auto StandardDocumentRenderer::setRenderDelay(int ms) const -> void
 {
     d->dequeueDelayTimer.setInterval(ms);
 }
 
-auto PdfDocumentRenderer::requestPageRender(int page, qreal scale, DocumentRenderFeedback* feedback) const -> std::optional<QImage>
+auto StandardDocumentRenderer::setDocument(std::shared_ptr<const Document> document) -> void
+{
+    // Reset active state
+    d->dequeueDelayTimer.stop();
+    d->renderState.reset();
+    d->requests.clear();
+    d->renderCache.clear();
+
+    d->document = document;
+}
+
+auto StandardDocumentRenderer::requestPageRender(int page, qreal scale, DocumentRenderFeedback* feedback) const -> std::optional<QImage>
 {
     return d->request(page, scale, feedback);
 }

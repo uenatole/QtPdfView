@@ -1,22 +1,22 @@
 #pragma once
 
-#include "core/DocumentRenderer.h"
+#include "DocumentRenderer.h"
 
-class QPdfDocument;
-
-class PdfDocumentRenderer : public DocumentRenderer
+class StandardDocumentRenderer : public DocumentRenderer
 {
 public:
-    explicit PdfDocumentRenderer(const std::shared_ptr<QPdfDocument>& document);
-    ~PdfDocumentRenderer() override;
+    StandardDocumentRenderer();
+    ~StandardDocumentRenderer() override;
 
     auto setPixelRatio(qreal ratio) const -> void;
     auto setRenderCacheLimit(qreal bytes) const -> void;
     auto setRenderDelay(int ms) const -> void;
 
+    auto setDocument(std::shared_ptr<const Document> document) -> void final;
+
     auto requestPageRender(int page, qreal scale, DocumentRenderFeedback* feedback) const -> std::optional<QImage> final;
 
 private:
     struct Private;
-    const std::unique_ptr<Private> d;
+    std::unique_ptr<Private> d;
 };

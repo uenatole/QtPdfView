@@ -1,7 +1,9 @@
-#include "PdfDocumentParser.h"
+#include "StandardDocumentParser.h"
 
 #include <QCache>
 #include <QPdfLinkModel>
+
+#include "Document.h"
 
 namespace
 {
@@ -137,12 +139,8 @@ namespace
     };
 }
 
-struct PdfDocumentParser::Private
+struct StandardDocumentParser::Private
 {
-    explicit Private(const std::shared_ptr<QPdfDocument>& document_)
-        : document(document_)
-    {}
-
     QList<QRectF> getGeometryByIndices(const int page, const LineIndices& iLine, const CharIndices& iChar) const
     {
         const auto& [Lines, _] = getPageLayout(page);
@@ -176,7 +174,7 @@ struct PdfDocumentParser::Private
     {
         const auto startIndex = iChar.first;
         const auto endIndex = iChar.second;
-        return document->getTextContentsAtIndex(page, startIndex, endIndex);
+        return document->text(page, startIndex, endIndex - startIndex + 1);
     }
 
     std::optional<DocumentLink> getLink(const int page, const QPointF pos) const
@@ -204,7 +202,7 @@ private:
 
             // Line forming method
             {
-                QList<QRectF> charBoxes = document->getCharGeometryAtIndex(page);
+                QList<QRectF> charBoxes = document->textBoxes(page);
                 QList<LineLayout> lines;
 
                 // TODO: change line detection method because right now it sometimes is wrong
@@ -256,25 +254,9 @@ private:
                 layout->Lines = lines;
             }
 
+            layout->Links = document->links(page);
+
             (void) pageLayoutCache.insert(page, layout); // TODO: make it work calculating layout size after creation
-
-            // TODO: get rid off QPdfLinkModel
-            {
-                QPdfLinkModel links;
-                links.setDocument(document.get());
-                links.setPage(page);
-
-                for (int i = 0; i < links.rowCount(QModelIndex()); ++i)
-                {
-                    QVariant variant = links.data(links.index(i), static_cast<int>(QPdfLinkModel::Role::Link));
-                    QPdfLink link = variant.value<QPdfLink>();
-
-                    if (link.url().isValid())
-                        layout->Links.append({ page, link.rectangles(), DocumentLink::Url(link.url())});
-                    else
-                        layout->Links.append({ page, link.rectangles(), DocumentLink::Jump(link.page(), link.zoom(), link.location() )});
-                }
-            }
 
             qDebug() << "Layout" << page;
             for (const auto& line : layout->Lines)
@@ -309,43 +291,41 @@ private:
         };
     }
 
-    friend class PdfDocumentParser;
+    friend class StandardDocumentParser;
 
-    const std::shared_ptr<QPdfDocument> document;
+    std::shared_ptr<const Document> document;
     mutable QCache<int, PageLayout> pageLayoutCache;
 };
 
-PdfDocumentParser::PdfDocumentParser(const std::shared_ptr<QPdfDocument>& document)
-    : d(new Private(document))
+StandardDocumentParser::StandardDocumentParser()
+    : d(std::make_unique<Private>())
 {
     setLayoutCacheLimit(64 /*MiB*/ * 1024 /*KiB*/ * 1024 /*B*/);
 }
 
-PdfDocumentParser::~PdfDocumentParser() = default;
+StandardDocumentParser::~StandardDocumentParser() = default;
 
-auto PdfDocumentParser::setLayoutCacheLimit(qreal bytes) const -> void
+auto StandardDocumentParser::setLayoutCacheLimit(qreal bytes) const -> void
 {
     d->pageLayoutCache.setMaxCost(bytes);
 }
 
-auto PdfDocumentParser::pageCount() const -> int
+auto StandardDocumentParser::setDocument(std::shared_ptr<const Document> document) -> void
 {
-    return d->document->pageCount();
+    // Reset active state
+    d->pageLayoutCache.clear();
+
+    d->document = document;
 }
 
-auto PdfDocumentParser::pagePointSize(int page) const -> QSizeF
-{
-    return d->document->pagePointSize(page);
-}
-
-auto PdfDocumentParser::textHit(int page, QPointF point, uint8_t lod) const -> bool
+auto StandardDocumentParser::textHit(int page, QPointF point, uint8_t lod) const -> bool
 {
     (void) lod; // TODO: hit test for different LoD
     const auto layout = d->getPageLayout(page);
     return layout.findLineAt(point) != layout.Lines.end();
 }
 
-auto PdfDocumentParser::textRegion() const -> std::unique_ptr<DocumentTextRegion>
+auto StandardDocumentParser::textRegion() const -> std::unique_ptr<DocumentTextRegion>
 {
     struct TextRegion : DocumentTextRegion
     {
@@ -390,13 +370,14 @@ auto PdfDocumentParser::textRegion() const -> std::unique_ptr<DocumentTextRegion
     return std::make_unique<TextRegion>(d.get());
 }
 
-auto PdfDocumentParser::linkHit(int page, QPointF point) const -> bool
+auto StandardDocumentParser::linkHit(int page, QPointF point) const -> bool
 {
     // TODO: possible optimization
     return d->getLink(page, point).has_value();
 }
 
-auto PdfDocumentParser::link(int page, QPointF point) const -> std::optional<DocumentLink>
+auto StandardDocumentParser::link(int page, QPointF point) const -> std::optional<DocumentLink>
 {
     return d->getLink(page, point);
 }
+

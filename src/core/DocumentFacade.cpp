@@ -1,8 +1,8 @@
 #include "DocumentFacade.h"
 
-#include <QPageSize>
 #include <QPdfLink>
 
+#include "Document.h"
 #include "DocumentRenderer.h"
 #include "DocumentParser.h"
 
@@ -10,8 +10,8 @@ namespace
 {
     struct DummyParser : DocumentParser
     {
-        auto pageCount() const -> int final { return 0; }
-        auto pagePointSize(int) const -> QSizeF final { return {}; }
+        auto setDocument(std::shared_ptr<const Document>) -> void final {}
+
         auto textHit(int, QPointF, uint8_t) const -> bool final { return false; }
 
         auto textRegion() const -> std::unique_ptr<DocumentTextRegion> final
@@ -34,6 +34,8 @@ namespace
 
     struct DummyRenderer : DocumentRenderer
     {
+        auto setDocument(std::shared_ptr<const Document>) -> void final {}
+
         auto requestPageRender(int page, qreal scale, DocumentRenderFeedback* feedback) const -> std::optional<QImage> override { return std::nullopt; }
     };
 }
@@ -45,14 +47,27 @@ DocumentFacade::DocumentFacade()
 
 DocumentFacade::~DocumentFacade() = default;
 
+auto DocumentFacade::setDocument(const std::shared_ptr<Document>& document) -> void
+{
+    m_document = document;
+
+    if (m_parser)
+        m_parser->setDocument(document);
+
+    if (m_renderer)
+        m_renderer->setDocument(document);
+}
+
 auto DocumentFacade::setParser(const std::shared_ptr<DocumentParser>& parser) -> void
 {
     m_parser = parser;
+    m_parser->setDocument(m_document);
 }
 
 auto DocumentFacade::setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void
 {
     m_renderer = renderer;
+    m_renderer->setDocument(m_document);
 }
 
 auto DocumentFacade::setRenderFeedback(DocumentRenderFeedback* feedback) -> void
@@ -62,12 +77,12 @@ auto DocumentFacade::setRenderFeedback(DocumentRenderFeedback* feedback) -> void
 
 auto DocumentFacade::pageCount() const -> int
 {
-    return m_parser->pageCount();
+    return m_document->pageCount();
 }
 
 auto DocumentFacade::pageSize(int number) const -> QSizeF
 {
-    return m_parser->pagePointSize(number);
+    return m_document->pagePointSize(number);
 }
 
 auto DocumentFacade::requestImage(int number, qreal scale) const -> std::optional<QImage>

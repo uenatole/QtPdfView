@@ -3,6 +3,8 @@
 #include <optional>
 #include <QImage>
 
+struct Document;
+
 struct DocumentRenderFeedback
 {
     virtual ~DocumentRenderFeedback() = default;
@@ -14,6 +16,8 @@ struct DocumentRenderFeedback
 struct DocumentRenderer
 {
     virtual ~DocumentRenderer() = default;
+
+    virtual auto setDocument(std::shared_ptr<const Document> document) -> void = 0;
 
     virtual auto requestPageRender(int page, qreal scale, DocumentRenderFeedback* feedback) const -> std::optional<QImage> = 0;
 };

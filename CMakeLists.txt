@@ -14,17 +14,13 @@ find_package(Qt6 COMPONENTS Widgets)
 add_library(QtPdfView
         src/custom/QCacheExt.h
 
+        src/core/Document.h
         src/core/DocumentParser.h
         src/core/DocumentRenderer.h
         src/core/DocumentFacade.cpp
         src/core/DocumentFacade.h
         src/core/DocumentLink.cpp
         src/core/DocumentLink.h
-
-        src/backend/pdf/PdfDocumentRenderer.cpp
-        src/backend/pdf/PdfDocumentRenderer.h
-        src/backend/pdf/PdfDocumentParser.cpp
-        src/backend/pdf/PdfDocumentParser.h
 
         src/ui/DocumentView.cpp
         src/ui/DocumentView.h
@@ -35,6 +31,14 @@ add_library(QtPdfView
         src/ui/addons/DocumentSelector.h
         src/ui/addons/DocumentZoomer.cpp
         src/ui/addons/DocumentZoomer.h
+
+        src/core/StandardDocumentParser.cpp
+        src/core/StandardDocumentParser.h
+        src/core/StandardDocumentRenderer.cpp
+        src/core/StandardDocumentRenderer.h
+
+        src/backend/pdf/PdfDocument.cpp
+        src/backend/pdf/PdfDocument.h
 )
 
 target_link_libraries(QtPdfView PUBLIC Qt::Pdf Qt::Widgets)

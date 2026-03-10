@@ -7,20 +7,23 @@
 #include "ui/addons/DocumentZoomer.h"
 
 #include "core/DocumentFacade.h"
-#include "backend/pdf/PdfDocumentParser.h"
-#include "backend/pdf/PdfDocumentRenderer.h"
+#include "core/StandardDocumentParser.h"
+#include "core/StandardDocumentRenderer.h"
+
+#include "backend/pdf/PdfDocument.h"
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
-    const auto pdf = std::make_shared<QPdfDocument>();
+    const auto pdf = std::make_shared<PdfDocument>();
     pdf->load(qEnvironmentVariable("DOCUMENT"));
 
-    const auto renderer = std::make_shared<PdfDocumentRenderer>(pdf);
-    const auto parser = std::make_shared<PdfDocumentParser>(pdf);
+    const auto renderer = std::make_shared<StandardDocumentRenderer>();
+    const auto parser = std::make_shared<StandardDocumentParser>();
 
     const auto document = std::make_shared<DocumentFacade>();
+    document->setDocument(pdf);
     document->setRenderer(renderer);
     document->setParser(parser);
 

@@ -4,6 +4,8 @@
 
 #include "DocumentLink.h"
 
+struct Document;
+
 struct DocumentTextRegion
 {
     virtual ~DocumentTextRegion() = default;
@@ -21,8 +23,7 @@ struct DocumentParser
 {
     virtual ~DocumentParser() = default;
 
-    virtual auto pageCount() const -> int = 0;
-    virtual auto pagePointSize(int page) const -> QSizeF = 0;
+    virtual auto setDocument(std::shared_ptr<const Document> document) -> void = 0;
 
     virtual auto textHit(int page, QPointF point, uint8_t lod = -1) const -> bool = 0;
     virtual auto textRegion() const -> std::unique_ptr<DocumentTextRegion> = 0;
