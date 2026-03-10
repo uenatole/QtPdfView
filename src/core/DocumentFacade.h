@@ -10,11 +10,11 @@ struct DocumentRenderer;
 struct DocumentParser;
 struct DocumentTextRegion;
 
-class Document
+class DocumentFacade
 {
 public:
-    Document();
-    ~Document();
+    DocumentFacade();
+    ~DocumentFacade();
 
     auto setParser(const std::shared_ptr<DocumentParser>& parser) -> void;
     auto setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void;

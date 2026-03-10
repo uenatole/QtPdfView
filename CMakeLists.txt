@@ -16,8 +16,8 @@ add_library(QtPdfView
 
         src/core/DocumentParser.h
         src/core/DocumentRenderer.h
-        src/core/Document.cpp
-        src/core/Document.h
+        src/core/DocumentFacade.cpp
+        src/core/DocumentFacade.h
         src/core/DocumentLink.cpp
         src/core/DocumentLink.h
 

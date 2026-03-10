@@ -5,7 +5,7 @@
 
 #include "DocumentPageItem.h"
 
-class Document;
+class DocumentFacade;
 
 // TODO: hide QGraphicsView
 class DocumentView : public QGraphicsView
@@ -14,7 +14,7 @@ public:
     explicit DocumentView(QWidget* parent = nullptr);
     ~DocumentView() override;
 
-    void setDocument(const std::shared_ptr<Document>& document);
+    void setDocument(const std::shared_ptr<DocumentFacade>& document);
 
     using QGraphicsView::transformationAnchor;
     using QGraphicsView::setTransformationAnchor;
@@ -27,7 +27,7 @@ private:
 
     QGraphicsItem* getPageItem(int page) const;
 
-    std::shared_ptr<Document> m_document;
+    std::shared_ptr<DocumentFacade> m_document;
     std::unique_ptr<DocumentPageItem::Feedback> m_feedback;
 
     std::optional<QPointF> m_selectionStart;

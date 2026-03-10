@@ -1,4 +1,4 @@
-#include "Document.h"
+#include "DocumentFacade.h"
 
 #include <QPageSize>
 #include <QPdfLink>
@@ -38,59 +38,59 @@ namespace
     };
 }
 
-Document::Document()
+DocumentFacade::DocumentFacade()
     : m_parser(std::make_shared<DummyParser>())
     , m_renderer(std::make_shared<DummyRenderer>())
 {}
 
-Document::~Document() = default;
+DocumentFacade::~DocumentFacade() = default;
 
-auto Document::setParser(const std::shared_ptr<DocumentParser>& parser) -> void
+auto DocumentFacade::setParser(const std::shared_ptr<DocumentParser>& parser) -> void
 {
     m_parser = parser;
 }
 
-auto Document::setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void
+auto DocumentFacade::setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void
 {
     m_renderer = renderer;
 }
 
-auto Document::setRenderFeedback(DocumentRenderFeedback* feedback) -> void
+auto DocumentFacade::setRenderFeedback(DocumentRenderFeedback* feedback) -> void
 {
     m_rendererFeedback = feedback;
 }
 
-auto Document::pageCount() const -> int
+auto DocumentFacade::pageCount() const -> int
 {
     return m_parser->pageCount();
 }
 
-auto Document::pageSize(int number) const -> QSizeF
+auto DocumentFacade::pageSize(int number) const -> QSizeF
 {
     return m_parser->pagePointSize(number);
 }
 
-auto Document::requestImage(int number, qreal scale) const -> std::optional<QImage>
+auto DocumentFacade::requestImage(int number, qreal scale) const -> std::optional<QImage>
 {
     return m_renderer->requestPageRender(number, scale, m_rendererFeedback);
 }
 
-auto Document::linkHit(int page, QPointF point) const -> bool
+auto DocumentFacade::linkHit(int page, QPointF point) const -> bool
 {
     return m_parser->linkHit(page, point);
 }
 
-auto Document::link(int page, QPointF point) const -> std::optional<DocumentLink>
+auto DocumentFacade::link(int page, QPointF point) const -> std::optional<DocumentLink>
 {
     return m_parser->link(page, point);
 }
 
-auto Document::textHit(int page, QPointF point, uint8_t lod) const -> bool
+auto DocumentFacade::textHit(int page, QPointF point, uint8_t lod) const -> bool
 {
     return m_parser->textHit(page, point, lod);
 }
 
-auto Document::textRegion() const -> std::unique_ptr<DocumentTextRegion>
+auto DocumentFacade::textRegion() const -> std::unique_ptr<DocumentTextRegion>
 {
     return m_parser->textRegion();
 }
