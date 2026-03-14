@@ -5,8 +5,11 @@
 #include <QGraphicsEffect>
 #include <QWheelEvent>
 
-#include "core/DocumentFacade.h"
-#include "core/DocumentRenderer.h"
+#include <Document/API/DocumentFacade.h>
+#include <Document/API/DocumentParser.h>
+#include <Document/API/DocumentRenderer.h>
+
+#include "DocumentPageItem.h"
 
 struct RenderFeedback : DocumentRenderFeedback
 {
@@ -14,7 +17,7 @@ struct RenderFeedback : DocumentRenderFeedback
 
     [[nodiscard]] bool isActual(const int page) const final
     {
-        const auto item = _view->getPageItem(page);
+        const auto item = _view->page(page);
 
         const QRect portRect = _view->viewport()->rect();
         const QRectF sceneRect = _view->mapToScene(portRect).boundingRect();
@@ -25,7 +28,7 @@ struct RenderFeedback : DocumentRenderFeedback
 
     void imageReady(const int page) const final
     {
-        const auto item = _view->getPageItem(page);
+        const auto item = _view->page(page);
         item->update();
     }
 
@@ -57,7 +60,7 @@ struct PageItemFeedback : DocumentPageItem::Feedback
                 t.m31(), t.m32(), t.m33()
             );
 
-            const auto page = dynamic_cast<DocumentPageItem*>(_view->getPageItem(number));
+            const auto page = dynamic_cast<DocumentPageItem*>(_view->page(number));
             _view->setTransform(t);
             page->ensureVisible({ location, location });
         }
@@ -67,17 +70,29 @@ private:
     DocumentView* const _view;
 };
 
+struct DocumentView::Private
+{
+    explicit Private(DocumentView* q)
+        : feedback(new PageItemFeedback(q))
+    {}
+
+    const std::unique_ptr<DocumentPageItem::Feedback> feedback;
+
+    std::shared_ptr<DocumentFacade> document;
+    QHash<int, DocumentPageItem*> pages;
+};
+
 DocumentView::DocumentView(QWidget* parent)
     : QGraphicsView(parent)
-    , m_feedback(new PageItemFeedback(this))
+    , d(new Private(this))
 {}
 
 DocumentView::~DocumentView(){}
 
 void DocumentView::setDocument(const std::shared_ptr<DocumentFacade>& document)
 {
-    m_document = document;
-    m_document->setRenderFeedback(new RenderFeedback(this));
+    d->document = document;
+    d->document->setRenderFeedback(new RenderFeedback(this));
 
     auto* scene = new QGraphicsScene();
     scene->setBackgroundBrush(palette().brush(QPalette::Dark));
@@ -91,7 +106,7 @@ void DocumentView::setDocument(const std::shared_ptr<DocumentFacade>& document)
     {
         QSizeF pagePointSize = document->pageSize(page);
 
-        const auto item = new DocumentPageItem(document, m_feedback.get(), page);
+        const auto item = new DocumentPageItem(document, d->feedback.get(), page);
         item->setPos(documentMargins, yCursor);
 
         yCursor += pagePointSize.height() + documentMargins;
@@ -105,7 +120,7 @@ void DocumentView::setDocument(const std::shared_ptr<DocumentFacade>& document)
         // item->setGraphicsEffect(shadowEffect);
 
         scene->addItem(item);
-        m_pageItems.insert(page, item);
+        d->pages.insert(page, item);
     }
 
     setScene(scene);
@@ -119,15 +134,13 @@ QString DocumentView::getSelectedText() const
 {
     QString text;
 
-    for (const QGraphicsItem* page : m_pageItems.asKeyValueRange() | std::views::values)
+    for (const QGraphicsItem* page : d->pages.asKeyValueRange() | std::views::values)
         text += dynamic_cast<const DocumentPageItem*>(page)->GetSelectedText();
 
     return text;
 }
 
-QGraphicsItem* DocumentView::getPageItem(const int page) const
+QGraphicsItem* DocumentView::page(int i) const
 {
-    return m_pageItems[page];
+    return d->pages[i];
 }
-
-

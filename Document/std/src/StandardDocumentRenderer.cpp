@@ -2,9 +2,9 @@
 
 #include <QtConcurrent/QtConcurrentRun>
 #include <QTimer>
-#include <QElapsedTimer>
 
-#include "Document.h"
+#include <Document/API/Document.h>
+
 #include "custom/QCacheExt.h"
 
 namespace

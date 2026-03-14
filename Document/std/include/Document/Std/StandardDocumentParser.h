@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DocumentParser.h"
+#include <Document/API/DocumentParser.h>
 
 class StandardDocumentParser : public DocumentParser
 {

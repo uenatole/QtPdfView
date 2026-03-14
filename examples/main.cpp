@@ -1,16 +1,16 @@
 #include <QApplication>
-#include <QPdfDocument>
 #include <QShortcut>
+#include <QClipboard>
 
-#include "ui/DocumentView.h"
-#include "ui/addons/DocumentSelector.h"
-#include "ui/addons/DocumentZoomer.h"
+#include <Document/API/DocumentFacade.h>
 
-#include "core/DocumentFacade.h"
-#include "core/StandardDocumentParser.h"
-#include "core/StandardDocumentRenderer.h"
+#include <DocumentView/DocumentView.h>
+#include <DocumentView/DocumentZoomer.h>
+#include <DocumentView/DocumentSelector.h>
 
-#include "backend/pdf/PdfDocument.h"
+#include <Document/Pdf/PdfDocument.h>
+#include <Document/Std/StandardDocumentParser.h>
+#include <Document/Std/StandardDocumentRenderer.h>
 
 int main(int argc, char** argv)
 {

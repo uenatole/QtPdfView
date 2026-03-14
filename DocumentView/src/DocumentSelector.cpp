@@ -1,7 +1,9 @@
 #include "DocumentSelector.h"
-#include "ui/DocumentView.h"
 
 #include <QMouseEvent>
+
+#include "DocumentView.h"
+#include "DocumentPageItem.h"
 
 DocumentSelector::DocumentSelector(DocumentView* parent)
     : QObject(parent)

@@ -1,9 +1,9 @@
 #include "StandardDocumentParser.h"
 
 #include <QCache>
-#include <QPdfLinkModel>
+#include <QRectF>
 
-#include "Document.h"
+#include <Document/API/Document.h>
 
 namespace
 {

@@ -1,7 +1,8 @@
 #include "DocumentZoomer.h"
-#include  "ui/DocumentView.h"
 
 #include <QWheelEvent>
+
+#include "DocumentView.h"
 
 DocumentZoomer::DocumentZoomer(DocumentView* parent)
     : QObject(parent)
