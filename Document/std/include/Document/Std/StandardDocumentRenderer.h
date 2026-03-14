@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DocumentRenderer.h"
+#include <Document/API/DocumentRenderer.h>
 
 class StandardDocumentRenderer : public DocumentRenderer
 {

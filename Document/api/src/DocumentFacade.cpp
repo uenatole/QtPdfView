@@ -1,7 +1,5 @@
 #include "DocumentFacade.h"
 
-#include <QPdfLink>
-
 #include "Document.h"
 #include "DocumentRenderer.h"
 #include "DocumentParser.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/Document.h"
+#include <Document/API/Document.h>
 
 class PdfDocument : public Document
 {

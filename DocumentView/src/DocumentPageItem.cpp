@@ -4,8 +4,8 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QCursor>
 
-#include "core/DocumentFacade.h"
-#include "core/DocumentParser.h"
+#include <Document/API/DocumentFacade.h>
+#include <Document/API/DocumentParser.h>
 
 struct DocumentPageItem::Private
 {

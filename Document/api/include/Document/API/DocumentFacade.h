@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <QImage>
+#include <QtGui/QImage>
 
 #include "DocumentLink.h"
 
@@ -22,7 +22,7 @@ public:
     auto setParser(const std::shared_ptr<DocumentParser>& parser) -> void;
     auto setRenderer(const std::shared_ptr<DocumentRenderer>& renderer) -> void;
 
-    // TODO: ~~~
+    // TODO: refactor this
     auto setRenderFeedback(DocumentRenderFeedback* feedback) -> void;
 
     auto pageCount() const -> int;

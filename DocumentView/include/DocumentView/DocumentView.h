@@ -1,9 +1,6 @@
 #pragma once
 
 #include <QGraphicsView>
-#include <QWidget>
-
-#include "DocumentPageItem.h"
 
 class DocumentFacade;
 
@@ -21,15 +18,13 @@ public:
 
     QString getSelectedText() const;
 
+    // TODO: remove it
+    QGraphicsItem* page(int) const;
+
 private:
     friend struct RenderFeedback;
     friend struct PageItemFeedback;
 
-    QGraphicsItem* getPageItem(int page) const;
-
-    std::shared_ptr<DocumentFacade> m_document;
-    std::unique_ptr<DocumentPageItem::Feedback> m_feedback;
-
-    std::optional<QPointF> m_selectionStart;
-    QHash<int, QGraphicsItem*> m_pageItems;
+    struct Private;
+    std::unique_ptr<Private> d;
 };
