@@ -28,7 +28,6 @@ struct DocumentParser
     virtual auto textHit(int page, QPointF point, uint8_t lod = -1) const -> bool = 0;
     virtual auto textRegion() const -> std::unique_ptr<DocumentTextRegion> = 0;
 
-    // TODO: get rid off QPdfLink to remove pdf-specific term
     virtual auto linkHit(int page, QPointF point) const -> bool = 0;
     virtual auto link(int page, QPointF point) const -> std::optional<DocumentLink> = 0;
 };
